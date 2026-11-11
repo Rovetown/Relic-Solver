@@ -1,0 +1,50 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oxc-project/oxc/main/npm/oxlint/configuration_schema.json",
+  "env": {
+    "browser": true,
+    "es2022": true
+  },
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn",
+    "perf": "warn"
+  },
+  "rules": {
+    "no-undef": "error"
+  },
+  "ignorePatterns": [
+    "node_modules/**",
+    "src/webapp/static/css/**",
+    "src/webapp/static/js/**/*.min.js"
+  ],
+  "overrides": [
+    {
+      "files": [
+        "postcss.config.js",
+        "*.config.js"
+      ],
+      "env": {
+        "node": true
+      }
+    },
+    {
+      "files": [
+        "src/webapp/static/js/solver-core.js"
+      ],
+      "env": {
+        "browser": true,
+        "node": true,
+        "es2022": true
+      }
+    },
+    {
+      "files": [
+        "tests/js/**/*.js"
+      ],
+      "env": {
+        "node": true,
+        "es2022": true
+      }
+    }
+  ]
+}

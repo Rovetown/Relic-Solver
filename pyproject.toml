@@ -1,0 +1,162 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "relic-solver"
+version = "5.0.0"
+description = "A Flask web app that calculates the exact probability of hitting divine relic targets on a single reroll in Idle Obelisk Miner. Uses an incremental forward Markov chain with absorbing states, weighted by the binomial distribution. Handles the full game mechanic: dynamic relic unlocks, shared caps, and uncapped D1. Results stream in real-time via NDJSON with Redis caching for instant repeat lookups."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.14"
+authors = [
+    { name = "Rovetown" },
+]
+keywords = ["idle-obelisk-miner", "iom", "relic", "divine", "probability", "markov-chain", "state-space", "flask", "heroku", "redis", "worker"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
+    "Topic :: Games/Entertainment",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Typing :: Typed",
+]
+dependencies = [
+    "flask>=3.1.2",
+    "flask-compress>=1.17",
+    "flask-cors>=6.0.5",
+    "flask-limiter>=4.1.1",
+    "gunicorn>=26.0.0",
+    "redis>=8.1.0",
+    "scipy~=1.18",
+]
+
+[project.urls]
+Homepage = "https://github.com/zaube/relic-solver"
+Repository = "https://github.com/zaube/relic-solver"
+Issues = "https://github.com/zaube/relic-solver/issues"
+
+[dependency-groups]
+dev = [
+    "commitizen>=4.17.0",
+    "bandit[toml]>=1.9.4",
+    "fonttools[woff]>=4.67.0",
+    "pillow>=11.0.0",
+    "detect-secrets>=1.5.0",
+    "line-profiler>=4.2",
+    "matplotlib>=3.11.1",
+    "pandas>=3.0.5",
+    "pip-licenses>=5.5.5",
+    "pre-commit>=4.6.1",
+    "pytest>=9.0.3",
+    "pytest-benchmark>=5.2.3",
+    "pytest-cov>=6.0",
+    "pytest-json-report>=1.5.0",
+    "pytest-sugar>=1.0",
+    "python-dotenv>=1.2.1",
+    "rich>=15.0.0",
+    "waitress>=3.0.2",
+    "pytest-playwright>=0.10.0",
+    "axe-playwright-python>=0.1.8",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "--tb=short --benchmark-disable -m 'not browser' --cov=relic_solver --cov=app --cov-report=term-missing --cov-report=html:tests/reports/htmlcov --cov-fail-under=90"
+strict_markers = true
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "benchmark: marks benchmark tests",
+    "redis: needs a live local Redis (skipped when REDIS_URL is unset)",
+    "browser: drives a real browser engine (needs `just browsers`; run with `just test-browser`)",
+    "shows_whats_new: let the what's-new dialog open instead of pre-dismissing it",
+]
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+tag_format = "v$version"
+version_scheme = "semver2"
+version_provider = "uv"
+update_changelog_on_bump = true
+version_files = [
+    "src/relic_solver/_version.py:__version__",
+    "pyproject.toml:version"
+]
+changelog_file = "CHANGELOG.md"
+changelog_incremental = false
+bump_message = "bump: version $current_version → $new_version"
+gpg_sign = false
+annotated_tag = true
+major_version_zero = false
+prerelease_offset = 0
+retry_after_failure = true
+allow_abort = false
+message_length_limit = 0
+allowed_prefixes = [
+    "Merge",
+    "Revert",
+    "Pull request",
+    "fixup!",
+    "squash!",
+    "amend!"
+]
+breaking_change_exclamation_in_title = false
+use_shortcuts = false
+pre_bump_hooks = []
+post_bump_hooks = []
+encoding = "utf-8"
+
+style = [
+    ["qmark", "fg:#ff9d00 bold"],
+    ["question", "bold"],
+    ["answer", "fg:#ff9d00 bold"],
+    ["pointer", "fg:#ff9d00 bold"],
+    ["highlighted", "fg:#ff9d00 bold"],
+    ["selected", "fg:#cc5454"],
+    ["separator", "fg:#cc5454"],
+    ["instruction", ""],
+    ["text", ""],
+    ["disabled", "fg:#858585 italic"]
+]
+
+[tool.bandit]
+targets = ["src/", "app.py", "tests/"]
+exclude_dirs = ["scripts/"]
+skips = ["B101"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/relic_solver"]
+
+[tool.mypy]
+mypy_path = "src"
+strict = true
+
+[[tool.mypy.overrides]]
+module = "app"
+disallow_untyped_decorators = false
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_decorators = false
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "scripts.*"
+disallow_untyped_decorators = false
+disallow_untyped_defs = false
+follow_imports = "skip"
+
+[tool.ruff]
+target-version = "py314"
+src = ["src", "."]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "UP", "B", "SIM", "C4"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["SIM300"]
+"scripts/**" = ["E501"]

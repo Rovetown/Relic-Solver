@@ -1,0 +1,45 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  release:
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.2
+      - run: uv sync --frozen
+      - name: Extract changelog for this version
+        id: changelog
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          BODY=""
+          if [ -f CHANGELOG.md ]; then
+            BODY=$(sed -n "/^## .*${VERSION}/,/^## /{/^## .*${VERSION}/d;/^## /d;p}" CHANGELOG.md)
+          fi
+          if [ -z "$BODY" ]; then
+            PREV_TAG=$(git tag --sort=-creatordate | sed -n '2p')
+            if [ -n "$PREV_TAG" ]; then
+              BODY=$(uv run cz changelog "${PREV_TAG}..HEAD" --dry-run 2>/dev/null || echo "Release ${GITHUB_REF_NAME}")
+            else
+              BODY=$(uv run cz changelog --dry-run 2>/dev/null || echo "Release ${GITHUB_REF_NAME}")
+            fi
+          fi
+          echo "$BODY" > /tmp/release-body.md
+      - name: Create release zip
+        run: zip -r "relic-solver-${{ github.ref_name }}.zip" . -x "*.git*"
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body_path: /tmp/release-body.md
+          files: "relic-solver-${{ github.ref_name }}.zip"

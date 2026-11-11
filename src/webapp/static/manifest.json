@@ -1,0 +1,28 @@
+{
+  "name": "Relic Solver",
+  "short_name": "Relic Solver",
+  "description": "Calculate divine relic reroll odds for Idle Obelisk Miner. Input your chests and targets to find your probability.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#6b5152",
+  "theme_color": "#6b5152",
+  "icons": [
+    {
+      "src": "/static/images/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/images/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/images/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

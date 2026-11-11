@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Calculate divine relic reroll odds for Idle Obelisk Miner. Input your chests and targets to find your probability.">
+    <title>Relic Solver - Idle Obelisk Miner Relic Calculator</title>
+
+
+    <link rel="canonical" href="https://iomreliccalc.me/">
+
+
+    <meta property="og:title" content="Relic Solver">
+    <meta property="og:description" content="Calculate divine relic reroll odds for Idle Obelisk Miner. Input your chests and targets to find your probability.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="{{ url_for('static', filename='images/favicon-96x96.png', _external=True) }}">
+    <meta name="theme-color" content="#6b5152">
+
+
+    <link rel="preload" href="{{ url_for('static', filename='fonts/press-start-2p-latin.woff2') }}"
+          as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="{{ url_for('static', filename='fonts/share-tech-mono-latin.woff2') }}"
+          as="font" type="font/woff2" crossorigin>
+
+    {% include "_icons.html" %}
+
+    {% set inlined_css = inline_asset('css/style.min.css') %}
+    {% if inlined_css %}
+    <style>{{ inlined_css|safe }}</style>
+    {% else %}
+    <link href="{{ asset_url('css/style.min.css') }}" rel="stylesheet">
+    {% endif %}
+
+
+    <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@type": "WebApplication",
+            "name": "Relic Solver",
+            "url": "https://iomreliccalc.me/",
+            "description": "Calculate divine relic reroll odds for Idle Obelisk Miner. Input your chests and targets to find your probability.",
+            "applicationCategory": "UtilitiesApplication",
+            "operatingSystem": "Any",
+            "browserRequirements": "Requires JavaScript",
+            "isAccessibleForFree": true,
+            "author": {
+                "@type": "Person",
+                "name": "Rovetown",
+                "url": "https://github.com/Rovetown"
+            },
+            "publisher": {
+                "@type": "Person",
+                "name": "Rovetown",
+                "url": "https://github.com/Rovetown"
+            },
+            "offers": {
+                "@type": "Offer",
+                "price": "0",
+                "priceCurrency": "USD"
+            }
+        }
+    </script>
+</head>
+
+<body>
+<noscript><p class="noscript-notice">JavaScript is required to run the solver.</p></noscript>
+<main class="main-container">
+
+    <h1 class="page-title">
+        Relic Solver
+        <span class="page-title__sub"><span class="page-title__game">Idle Obelisk Miner</span> Relic Calculator</span>
+    </h1>
+
+
+    <a class="kofi-float" href="https://ko-fi.com/rovetown"
+       target="_blank" rel="noopener noreferrer"><img
+        class="kofi-button"
+        src="{{ url_for('static', filename='images/kofi5.webp') }}"
+        width="143" height="36"
+        alt="Buy Me a Coffee at ko-fi.com"></a>
+
+    <div class="spacer-12"></div>
+
+
+    <form id="solverForm" novalidate>
+    <div class="content-grid">
+
+        <fieldset class="section section--inputs">
+            <legend class="section-title">Inputs</legend>
+
+            <div class="box">
+                <label for="totalRelicChests">
+                    <img src="{{ url_for('static', filename='images/Relic_Chest.webp') }}" alt="" class="label-icon" width="32" height="32">
+                    Total Relic Chests
+                </label>
+                <input
+                        id="totalRelicChests"
+                        name="totalRelicChests"
+                        type="number"
+                        aria-describedby="help-totalRelicChests"
+                        aria-invalid="false"
+                        value="0"
+                        min="0"
+                >
+            </div>
+
+            <div class="box">
+                <label for="totalDivineChests">
+                    <img src="{{ url_for('static', filename='images/Divine_Chest.webp') }}" alt="" class="label-icon" width="32" height="32">
+                    Total Divine Chests
+                </label>
+                <input
+                        id="totalDivineChests"
+                        name="totalDivineChests"
+                        type="number"
+                        aria-describedby="help-totalDivineChests"
+                        aria-invalid="false"
+                        value="0"
+                        min="0"
+                >
+            </div>
+
+            <div class="box">
+                <label for="relicCap">
+                    <img src="{{ url_for('static', filename='images/Divine_Relic_Cap.webp') }}" alt=""
+                         class="label-icon" width="32" height="32">
+                    Divine Relic Cap
+                </label>
+                <input
+                        id="relicCap"
+                        name="relicCap"
+                        type="number"
+                        aria-describedby="help-relicCap"
+                        aria-invalid="false"
+                        value="{{ cfg.DEFAULT_RELIC_CAP }}"
+                        min="{{ cfg.MIN_RELIC_CAP }}"
+                        max="{{ cfg.MAX_RELIC_CAP }}"
+                >
+            </div>
+        </fieldset>
+
+        <div class="help-cell">
+            <button
+                    type="button"
+                    class="btn-pixel btn-pixel--sm"
+                    aria-expanded="false"
+                    aria-controls="inputHelp"
+            >
+                Input help
+            </button>
+            <div class="collapse help-collapse" id="inputHelp">
+                <ul class="help-collapse__list">
+                    <li id="help-totalRelicChests">
+                        <span class="label-accent">Total Relic Chests</span>: How many Relic Chests you
+                        have available to open in total.
+                    </li>
+                    <li id="help-totalDivineChests">
+                        <span class="label-accent">Total Divine Chests</span>: How many Divine Chests you
+                        can open.
+                    </li>
+                    <li id="help-relicCap">
+                        <span class="label-accent">Divine Relic Cap</span>: Your divine relic cap. example sources: Cthulhu card, divine challenges. Values closer to 21 will slow down calculations a lot!
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+
+        <fieldset class="section section--targets">
+            <legend class="section-title">Desired outcome</legend>
+
+            <div class="box">
+                <label for="targetD1">
+                    <img src="{{ url_for('static', filename='images/Rainbow_Floor_Chance.webp') }}" alt=""
+                         class="label-icon" width="32" height="32">
+                    Rainbow Floor Chance +1%
+                </label>
+                <input
+                        id="targetD1"
+                        name="targetD1"
+                        type="number"
+                        aria-describedby="help-targetD1"
+                        aria-invalid="false"
+                        value="0"
+                        min="0"
+                >
+            </div>
+
+            <div class="box">
+                <label for="targetD2">
+                    <img src="{{ url_for('static', filename='images/Supernova_Multiplier.webp') }}" alt=""
+                         class="label-icon" width="32" height="32">
+                    Supernova Multiplier +2x
+                </label>
+                <input
+                        id="targetD2"
+                        name="targetD2"
+                        type="number"
+                        aria-describedby="help-targetD2"
+                        aria-invalid="false"
+                        value="0"
+                        min="0"
+                        max="{{ cfg.MAX_RELIC_CAP }}"
+                >
+            </div>
+
+            <div class="box">
+                <label for="targetD3">
+                    <img src="{{ url_for('static', filename='images/Rainbow_Floor_Multiplier.webp') }}" alt=""
+                         class="label-icon" width="32" height="32">
+                    Rainbow Floor Multiplier +20%
+                </label>
+                <input
+                        id="targetD3"
+                        name="targetD3"
+                        type="number"
+                        aria-describedby="help-targetD3"
+                        aria-invalid="false"
+                        value="0"
+                        min="0"
+                        max="{{ cfg.MAX_RELIC_CAP }}"
+                >
+            </div>
+
+            <div class="box">
+                <label for="targetD4">
+                    <img src="{{ url_for('static', filename='images/5x_Fish_Tick_Chance.webp') }}" alt=""
+                         class="label-icon" width="32" height="32">
+                    Fishing Ticks 5x Chance +2%
+                </label>
+                <input
+                        id="targetD4"
+                        name="targetD4"
+                        type="number"
+                        aria-describedby="help-targetD4"
+                        aria-invalid="false"
+                        value="0"
+                        min="0"
+                        max="{{ cfg.MAX_RELIC_CAP }}"
+                >
+            </div>
+
+            <div class="box">
+                <label for="targetD5">
+                    <img src="{{ url_for('static', filename='images/Rainbow_Void_Portal_Chance.webp') }}" alt=""
+                         class="label-icon" width="32" height="32">
+                    Rainbow Void Portal Chance +0.50%
+                </label>
+                <input
+                        id="targetD5"
+                        name="targetD5"
+                        type="number"
+                        aria-describedby="help-targetD5"
+                        aria-invalid="false"
+                        value="0"
+                        min="0"
+                        max="{{ cfg.MAX_RELIC_CAP }}"
+                >
+            </div>
+        </fieldset>
+
+        <div class="help-cell">
+            <button
+                    type="button"
+                    class="btn-pixel btn-pixel--sm"
+                    aria-expanded="false"
+                    aria-controls="outputHelp"
+            >
+                Output help
+            </button>
+            <div class="collapse help-collapse" id="outputHelp">
+                <ul class="help-collapse__list">
+                    <li id="help-targetD1">
+                        <span class="label-accent">Rainbow Floor Chance</span>: Set how many of these
+                        relics you want to end up with.
+                    </li>
+                    <li id="help-targetD2">
+                        <span class="label-accent">Supernova Multiplier</span>: Your target count for this
+                        relic.
+                    </li>
+                    <li id="help-targetD3">
+                        <span class="label-accent">Rainbow Floor Multi</span>: Your target count for this
+                        relic.
+                    </li>
+                    <li id="help-targetD4">
+                        <span class="label-accent">Fishing Ticks 5x Chance</span>: Your target count for
+                        this relic.
+                    </li>
+                    <li id="help-targetD5">
+                        <span class="label-accent">Rainbow Void Portal Chance</span>: Your target count for
+                        this relic.
+                    </li>
+                </ul>
+                <div class="help-collapse__tip">
+                    Tip: For realistic results, set non‑zero targets for only 1–2 relic
+                    types and leave the others at 0.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="spacer-12"></div>
+
+    <div class="solver-row">
+        <div class="solver-row__btn">
+            <button id="runSolver" type="submit"
+                    class="btn-pixel btn-pixel--green">
+                <img src="{{ url_for('static', filename='images/sprChestRelicReroll_0.webp') }}"
+                     alt=""
+                     aria-hidden="true"
+                     class="btn-icon"
+                     width="32" height="32">
+                Run Solver
+            </button>
+        </div>
+
+        <div
+                id="progressBar"
+                class="progress solver-row__result"
+                role="progressbar"
+                aria-label="Solver progress"
+                aria-valuenow="100"
+                aria-valuemin="0"
+                aria-valuemax="100"
+        >
+
+            <div class="progress-bar progress-bar-striped progress-bar-animated progress-bar--full"></div>
+        </div>
+
+        <div id="results" class="section section--results solver-row__result" aria-live="polite">
+            <h2 class="section-title">Results</h2>
+            <div class="result-probability" id="resultProbability"></div>
+            <div class="result-details">
+                <span class="result-detail" id="resultRerolls"></span>
+
+                <span class="result-detail result-detail--gems" id="resultGemsRow">
+                    <img src="{{ url_for('static', filename='images/Gem.webp') }}" alt="" class="result-icon" width="18" height="18">
+                    <span id="resultGems"></span>
+                </span>
+                <span class="result-detail" id="resultTime"></span>
+            </div>
+        </div>
+
+        <div id="errorBox" class="section section--error solver-row__result" aria-live="assertive">
+            <h2 class="section-title">Error</h2>
+            <div id="errorMessage"></div>
+        </div>
+    </div>
+    </form>
+
+
+    <footer class="page-footer">
+        <p>
+            Built by <a class="text-link" rel="author" href="https://github.com/Rovetown">Rovetown</a>.
+            <a class="text-link" href="https://github.com/Rovetown/Relic-Solver"><svg
+                class="footer-icon" viewBox="0 0 16 16" width="14" height="14"
+                aria-hidden="true" focusable="false"><path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"/></svg>Source and bug reports on GitHub</a>.
+            <a class="text-link" href="https://discord.gg/WKVUbbSJqA"><svg
+                class="footer-icon" viewBox="0 0 24 24" width="14" height="14"
+                aria-hidden="true" focusable="false"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg>Discord</a>.
+            Odds derived from
+            <a class="text-link" href="https://apps.apple.com/app/idle-obelisk-miner/id6448125670">Idle Obelisk Miner</a>
+            by Checkbox Entertainment.
+            <a class="text-link" href="/privacy">Privacy</a>.
+        </p>
+    </footer>
+</main>
+
+
+<dialog class="whatsnew" id="whatsNew" aria-labelledby="whatsNewTitle">
+    <div class="whatsnew__body">
+        <h2 class="whatsnew__title" id="whatsNewTitle">What's new</h2>
+        <p class="whatsnew__lede">A few things changed since you were last here.</p>
+        <ul class="whatsnew__list">
+            <li><span class="whatsnew__what">The site loads faster.</span>
+                <span class="whatsnew__why">Pages come from a server near you now,
+                    and there is less to download.</span></li>
+            <li><span class="whatsnew__what">New: a privacy page.</span>
+                <span class="whatsnew__why">It says what the site keeps and what it
+                    does not. Linked at the bottom.</span></li>
+            <li><span class="whatsnew__what">New: a support button.</span>
+                <span class="whatsnew__why">Top-right corner, if you ever feel like
+                    buying me a coffee.</span></li>
+            <li><span class="whatsnew__what">New: links at the bottom.</span>
+                <span class="whatsnew__why">Source code and bug reports on GitHub,
+                    and a Discord to ask things in.</span></li>
+            <li><span class="whatsnew__what">Tidier on phones.</span>
+                <span class="whatsnew__why">A sharper icon in your browser tab, and
+                    the input boxes line up properly.</span></li>
+        </ul>
+    </div>
+    <div class="whatsnew__foot">
+        <button type="button" class="btn-pixel btn-pixel--green" data-whatsnew-dismiss>
+            Close and don't show again
+        </button>
+    </div>
+</dialog>
+
+
+<script src="{{ asset_url('js/solver-core.min.js') }}"></script>
+<script src="{{ asset_url('js/solver.min.js') }}"></script>
+</body>
+</html>

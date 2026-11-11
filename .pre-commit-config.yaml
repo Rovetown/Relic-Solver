@@ -1,0 +1,103 @@
+exclude: '(^|/)(nul|NUL)$|node_modules/|(src/webapp/static/css/style.min.css)'
+
+default_stages: [pre-commit]
+
+repos:
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.13.5
+    hooks:
+      - id: uv-lock
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-added-large-files
+        args: [ --maxkb=1024 ]
+      - id: debug-statements
+      - id: detect-private-key
+
+  - repo: https://github.com/asottile/add-trailing-comma
+    rev: v4.0.0
+    hooks:
+      - id: add-trailing-comma
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.2
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+  - repo: https://github.com/PyCQA/docformatter
+    rev: v1.7.8
+    hooks:
+      - id: docformatter
+        args: [--in-place]
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v2.4.0
+    hooks:
+      - id: mypy
+        additional_dependencies: [types-pyyaml]
+        exclude: '^scripts/'
+
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.9.4
+    hooks:
+      - id: bandit
+        args: [-c, pyproject.toml]
+        additional_dependencies: ["bandit[toml]"]
+
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args: [--baseline, .secrets.baseline]
+        exclude: ^(node_modules/|reports/|tests/reports/audit/|src/webapp/static/\.well-known/)
+
+  - repo: https://github.com/pre-commit/pygrep-hooks
+    rev: v1.10.0
+    hooks:
+      - id: python-use-type-annotations
+      - id: python-no-log-warn
+      - id: python-no-eval
+      - id: rst-backticks
+      - id: rst-directive-colons
+      - id: rst-inline-touching-normal
+
+  - repo: https://github.com/adrienverge/yamllint.git
+    rev: v1.38.0
+    hooks:
+      - id: yamllint
+        files: '\.(yml|yaml)$'
+        exclude: ^(node_modules/)
+
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v4.19.3
+    hooks:
+      - id: commitizen
+        stages: [commit-msg]
+
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.3
+    hooks:
+      - id: codespell
+        exclude: ^(node_modules/|.*\.min\.(js|css)$|package-lock\.json|uv\.lock|THIRD_PARTY_LICENSES$|reports/lighthouse/|src/webapp/static/\.well-known/)
+        args: [ "-L", "solver,solved" ]
+
+  - repo: local
+    hooks:
+      - id: oxlint
+        name: oxlint
+        entry: oxlint --deny-warnings
+        language: system
+        types_or: [ javascript ]
+        exclude: ^(node_modules/|.*\.min\.js$)
+
+      - id: pytest
+        name: pytest
+        entry: uv run pytest --tb=short --cov=relic_solver --cov-report=term-missing
+        language: system
+        stages: [pre-push]
+        pass_filenames: false

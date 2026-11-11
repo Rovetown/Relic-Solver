@@ -1,0 +1,9 @@
+---
+vulnerabilities:
+  - id: GHSA-6v7p-g79w-8964
+    statement: "Vendored in the base image's pip; not a project dependency."
+    expiredAt: 2026-12-01
+
+  - id: CVE-2025-47273
+    statement: "Base image setuptools; PackageIndex is never used at runtime."
+    expiredAt: 2026-12-01

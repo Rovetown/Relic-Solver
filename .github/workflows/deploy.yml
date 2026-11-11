@@ -1,0 +1,49 @@
+name: Deploy Production
+
+on:
+  workflow_run:
+    workflows: ["Main Verification"]
+    types:
+      - completed
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: main
+      - name: Check for committed artifacts
+        run: |
+          DIRTY_PATTERNS="__pycache__ *.pyc *.pyo .coverage htmlcov/ .mypy_cache/ .pytest_cache/ .benchmarks/ *.egg-info/"
+          FOUND=""
+          for pattern in $DIRTY_PATTERNS; do
+            matches=$(git ls-files "$pattern" 2>/dev/null)
+            if [ -n "$matches" ]; then
+              FOUND="$FOUND\n$matches"
+            fi
+          done
+          if [ -n "$FOUND" ]; then
+            echo "::error::Build artifacts found in tracked files:$FOUND"
+            exit 1
+          fi
+          echo "No build artifacts found in tracked files."
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.2
+      - name: Verify clean install
+        run: |
+          uv sync --frozen
+          uv run pytest --tb=short -m "not benchmark and not browser" -q
+      - name: Deploy to Heroku
+        run: |
+          printf "machine git.heroku.com\n  login heroku\n  password %s\n" "$HEROKU_API_KEY" > ~/.netrc
+          chmod 600 ~/.netrc
+          git push --force https://git.heroku.com/${{ secrets.HEROKU_APP_NAME }}.git HEAD:main
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}

@@ -1,0 +1,111 @@
+name: Main Verification
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: main-verification-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-26.04
+    services:
+      redis:
+        image: redis:8-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      REDIS_URL: redis://127.0.0.1:6379/0
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.2
+        with:
+          enable-cache: true
+      - run: uv sync --frozen
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: 'npm'
+      - name: Install JS dependencies
+        run: npm ci
+      - name: Fix Permissions
+        run: chmod +x node_modules/.bin/postcss node_modules/.bin/esbuild
+      - name: Verify asset build
+        run: npm run build
+      - name: Install oxlint
+        env:
+          OXLINT_VERSION: '1.84.0'
+        run: |
+          base=https://github.com/oxc-project/oxc/releases/download
+          asset=oxlint-x86_64-unknown-linux-gnu.tar.gz
+          curl -sSfL "$base/apps_v${OXLINT_VERSION}/$asset" | tar xz -C /tmp
+          sudo install -m 0755 /tmp/oxlint-x86_64-unknown-linux-gnu /usr/local/bin/oxlint
+          oxlint --version
+      - name: Cache pre-commit environments
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: pre-commit-
+      - name: Run pre-commit (all hooks)
+        run: uv run pre-commit run --all-files
+      - name: Run tests
+        run: |
+          mkdir -p reports
+          uv run pytest -m "not benchmark and not browser" \
+            --json-report --json-report-file=reports/test_results.json
+      - name: Generate test visualizations
+        if: always()
+        run: |
+          mkdir -p reports/visuals
+          uv run python scripts/visualize_test_suite.py reports/test_results.json -o reports/visuals/test_suite
+          uv run python scripts/visualize_test_accuracy.py -o reports/visuals/accuracy
+          uv run python scripts/visualize_cross_validation.py -o reports/visuals/cross_validation
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports-main
+          path: |
+            tests/reports/
+            reports/visuals/
+          if-no-files-found: ignore
+
+  benchmark:
+    runs-on: ubuntu-26.04
+    needs: verify
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.2
+        with:
+          enable-cache: true
+      - run: uv sync --frozen
+      - name: Run benchmarks and save baseline
+        run: uv run pytest --benchmark-enable --benchmark-only --no-cov --benchmark-save=main -v
+      - name: Generate benchmark visualization
+        if: always()
+        run: uv run python scripts/visualize_benchmarks.py .benchmarks/ -o reports/visuals/benchmarks
+      - name: Upload benchmark baseline
+        uses: actions/cache/save@v6
+        with:
+          path: .benchmarks/
+          key: benchmark-baseline-${{ github.sha }}
+      - name: Upload benchmark artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: benchmark-main
+          path: |
+            .benchmarks/
+            reports/visuals/benchmarks/
+          if-no-files-found: ignore

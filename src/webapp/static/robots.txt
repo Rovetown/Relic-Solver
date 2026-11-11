@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /solve
+Allow: /.well-known/security.txt
+Allow: /.well-known/pgp-key.txt
+Disallow: /.well-known/
+
+Sitemap: https://iomreliccalc.me/sitemap.xml

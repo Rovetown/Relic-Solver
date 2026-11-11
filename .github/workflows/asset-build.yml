@@ -1,0 +1,50 @@
+name: Asset Build
+
+on:
+  push:
+    branches: [main, dev]
+    paths:
+      - "style.css"
+      - "postcss.config.js"
+      - "package.json"
+      - "src/webapp/static/js/*.js"
+      - "!src/webapp/static/js/*.min.js"
+  pull_request:
+    paths:
+      - "style.css"
+      - "postcss.config.js"
+      - "package.json"
+      - "src/webapp/static/js/*.js"
+      - "!src/webapp/static/js/*.min.js"
+
+jobs:
+  build:
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+
+      - name: Install JS dependencies
+        run: npm ci
+
+      - name: Fix Permissions
+        run: chmod +x node_modules/.bin/postcss node_modules/.bin/esbuild
+
+      - name: Build style.min.css and the .min.js artifacts
+        run: npm run build
+
+      - name: Commit updated build artifacts
+        if: github.event_name == 'push'
+        run: |
+          git diff --quiet src/webapp/static/css/style.min.css src/webapp/static/js && exit 0
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/webapp/static/css/style.min.css src/webapp/static/js/*.min.js
+          git commit -m "ci(assets): rebuild style.min.css and the .min.js files [skip ci]"
+          git push

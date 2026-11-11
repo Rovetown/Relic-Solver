@@ -1,0 +1,57 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":semanticCommits"
+  ],
+  "timezone": "Etc/UTC",
+  "schedule": ["* 9-12 * * 1"],
+  "labels": ["dependencies"],
+  "assignees": ["Rovetown"],
+  "prConcurrentLimit": 10,
+  "pre-commit": {
+    "enabled": true
+  },
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["* 9-12 * * 1"]
+  },
+  "vulnerabilityAlerts": {
+    "labels": ["dependencies", "security"],
+    "assignees": ["Rovetown"]
+  },
+  "packageRules": [
+    {
+      "description": "Python dependencies: pyproject.toml + uv.lock",
+      "matchManagers": ["pep621"],
+      "semanticCommitType": "build",
+      "semanticCommitScope": "deps"
+    },
+    {
+      "description": "GitHub Actions versions in workflow files",
+      "matchManagers": ["github-actions"],
+      "semanticCommitType": "ci",
+      "semanticCommitScope": "deps",
+      "addLabels": ["ci"]
+    },
+    {
+      "description": "pre-commit hook revisions, grouped into one PR like the old tooling-update.yml",
+      "matchManagers": ["pre-commit"],
+      "groupName": "pre-commit hooks",
+      "semanticCommitType": "build",
+      "semanticCommitScope": "tools"
+    },
+    {
+      "description": "Keep the Python version in Dockerfile and .python-version in lockstep",
+      "matchManagers": ["dockerfile", "pyenv"],
+      "matchPackageNames": ["python"],
+      "groupName": "python version"
+    },
+    {
+      "description": "npm devDependencies for the PostCSS build",
+      "matchManagers": ["npm"],
+      "semanticCommitType": "build",
+      "semanticCommitScope": "deps"
+    }
+  ]
+}

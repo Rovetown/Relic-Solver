@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="What the Relic Solver does and does not collect: no cookies, no accounts, no tracking.">
+    <title>Privacy - Relic Solver</title>
+
+    <link rel="canonical" href="https://iomreliccalc.me/privacy">
+    <meta name="theme-color" content="#6b5152">
+
+    {% include "_icons.html" %}
+    <link href="{{ asset_url('css/style.min.css') }}" rel="stylesheet">
+</head>
+
+<body>
+<main class="main-container policy">
+    <h1 class="page-title">
+        Relic Solver
+        <span class="page-title__sub">Privacy</span>
+    </h1>
+
+    <div class="spacer-12"></div>
+
+    <section class="section section--inputs">
+        <h2 class="section-title">The short version</h2>
+        <p>No cookies. No accounts. No advertising. No analytics or tracking
+            scripts of any kind. Nothing you type here is
+            <strong>tied to you</strong>.</p>
+        <p>The site is served through Cloudflare, who keep ordinary traffic
+            records the way every network in between does.
+            <a class="text-link" href="#other-parties">Details below.</a></p>
+    </section>
+
+    <section class="section section--targets">
+        <h2 class="section-title">What the site receives</h2>
+        <p>Pressing <em class="ui-ref">Run Solver</em> sends the numbers you entered - chest
+            counts, the relic cap and your targets - to the server, which
+            calculates the odds and sends them back. They are game numbers,
+            <strong>not personal information</strong>.</p>
+        <p>Those numbers are kept in a results cache so that an identical
+            question is answered instantly next time. The cache is keyed on
+            the numbers alone. It records <strong>nothing about who asked</strong>.</p>
+        <p>A usage record is also kept: one row per calculation, holding the
+            numbers you entered, the resulting probability, and how long the
+            calculation took. It exists so the solver can be checked against
+            what people actually ask it, and it is capped at the most recent
+            <span class="count">50,000</span> rows. The row has
+            <strong>no address, no identifier and no way to be tied back</strong>
+            to a visitor or to any other row.</p>
+        <p>The solver uses your IP address for <strong>one thing</strong>: a counter
+            that limits how many requests one address may make, so a single
+            visitor cannot take it down for everyone. The counter holds a tally
+            and expires on its own. It is never logged and never stored beside
+            the numbers you entered.</p>
+        <p>The server's own logs record what it did - how long a calculation
+            took, and any errors - and carry <strong>no IP address, no browser
+            details and none of the numbers you entered</strong>.</p>
+    </section>
+
+    <section class="section section--results">
+        <h2 class="section-title">What stays in your browser</h2>
+        <p>Your last inputs are saved in your browser's local storage so the
+            form is still filled in when you come back. That <strong>never leaves
+            your device</strong>. The entry is dropped on its own after
+            <span class="count">90</span> days, and clearing your browser data
+            removes it sooner.</p>
+        <p>You can also remove it right now:</p>
+        <p class="storage-control">
+            <button type="button" id="clearStorage"
+                    class="btn-pixel btn-pixel--sm" hidden>Clear saved inputs</button>
+
+            <span id="clearStorageStatus" class="storage-control__status"
+                  role="status" aria-live="polite">Clearing your browser data for this
+                site removes the saved inputs.</span>
+        </p>
+    </section>
+
+    <section class="section section--inputs" id="other-parties">
+        <h2 class="section-title">Other parties</h2>
+        <p>Nothing on this page is fetched from another origin. Styles,
+            scripts, fonts and images all come from this site, including the
+            Ko-fi button in the footer, so <strong>no third party sees a
+            request simply because you opened the page</strong>. The links to
+            GitHub, Discord and Ko-fi are ordinary links: they reach those
+            sites only when you follow them.</p>
+        <p>The site runs on <a class="text-link" href="https://www.heroku.com/">Heroku</a>,
+            whose routing layer keeps its own short-lived access logs, as any
+            web host does.</p>
+        <p>Since October 2026 the pages are delivered through
+            <a class="text-link" href="https://www.cloudflare.com/">Cloudflare</a>,
+            which serves them from somewhere near you and absorbs traffic
+            floods. Requests reach them first, so they see what any network
+            on the way sees: the address it came from, the page asked for and
+            which browser asked.</p>
+    </section>
+
+    <section class="section section--targets">
+        <h2 class="section-title">Questions</h2>
+        <p>Open an issue on
+            <a class="text-link" href="https://github.com/Rovetown/Relic-Solver">GitHub</a>.</p>
+        <p><a class="text-link" href="/">Back to the solver</a></p>
+    </section>
+</main>
+<script src="{{ asset_url('js/privacy.min.js') }}"></script>
+</body>
+</html>

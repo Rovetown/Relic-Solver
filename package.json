@@ -1,0 +1,16 @@
+{
+  "name": "relic-solver",
+  "private": true,
+  "devDependencies": {
+    "cssnano": "^9.9.0",
+    "esbuild": "^0.28.2",
+    "postcss": "^8.5.31",
+    "postcss-cli": "^12.0.0"
+  },
+  "scripts": {
+    "build": "npm run build-css && npm run build-js",
+    "build-css": "postcss style.css -o src/webapp/static/css/style.min.css --config ./postcss.config.js --no-map",
+    "build-js": "esbuild src/webapp/static/js/solver-core.js src/webapp/static/js/solver.js src/webapp/static/js/privacy.js --minify --target=es2017 --charset=utf8 --outdir=src/webapp/static/js --out-extension:.js=.min.js",
+    "test-js": "node --test \"tests/js/**/*.test.js\""
+  }
+}

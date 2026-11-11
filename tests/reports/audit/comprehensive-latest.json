@@ -1,0 +1,464 @@
+{
+  "checklist": "comprehensive-audit",
+  "generated": "2026-10-23T23:47:47.454023+00:00",
+  "base_url": "http://127.0.0.1:5000",
+  "live_host": "iomreliccalc.me",
+  "git_commit": "a6a6a39",
+  "totals": {
+    "rules": 28,
+    "pass": 27,
+    "not-applicable": 1
+  },
+  "findings": [
+    {
+      "slug": "charset",
+      "title": "Declare UTF-8 character encoding",
+      "category": "html",
+      "priority": "critical",
+      "status": "pass",
+      "evidence": "<meta charset=UTF-8> inside the first 1024 bytes of every page",
+      "detail": {
+        "/": true,
+        "/privacy": true,
+        "/does-not-exist": true
+      }
+    },
+    {
+      "slug": "doctype",
+      "title": "Use the HTML5 doctype",
+      "category": "html",
+      "priority": "critical",
+      "status": "pass",
+      "evidence": "every page opens with <!doctype html>",
+      "detail": {
+        "/": true,
+        "/privacy": true,
+        "/does-not-exist": true
+      }
+    },
+    {
+      "slug": "lang-attribute",
+      "title": "Set the page lang attribute",
+      "category": "html",
+      "priority": "high",
+      "status": "pass",
+      "evidence": "<html lang> present on every page",
+      "detail": {
+        "/": true,
+        "/privacy": true,
+        "/does-not-exist": true
+      }
+    },
+    {
+      "slug": "viewport",
+      "title": "Set the responsive viewport meta tag",
+      "category": "html",
+      "priority": "critical",
+      "status": "pass",
+      "evidence": "viewport meta with width=device-width on every page",
+      "detail": {
+        "/": true,
+        "/privacy": true,
+        "/does-not-exist": true
+      }
+    },
+    {
+      "slug": "color-contrast",
+      "title": "Meet minimum color contrast ratios",
+      "category": "accessibility",
+      "priority": "high",
+      "status": "pass",
+      "evidence": "axe-core reports no colour-contrast violations on any page",
+      "detail": {
+        "/": [],
+        "/privacy": [],
+        "/does-not-exist": []
+      }
+    },
+    {
+      "slug": "form-labels",
+      "title": "Associate labels with form controls",
+      "category": "accessibility",
+      "priority": "critical",
+      "status": "pass",
+      "evidence": "axe-core reports no label violations",
+      "detail": {
+        "/": [],
+        "/privacy": [],
+        "/does-not-exist": []
+      }
+    },
+    {
+      "slug": "heading-order",
+      "title": "Maintain logical heading order",
+      "category": "accessibility",
+      "priority": "medium",
+      "status": "pass",
+      "evidence": "axe-core reports no heading-order violations",
+      "detail": {
+        "axe": {
+          "/": [],
+          "/privacy": [],
+          "/does-not-exist": []
+        },
+        "headings": {
+          "/": [
+            "H1",
+            "H2",
+            "H2",
+            "H2"
+          ],
+          "/privacy": [
+            "H1",
+            "H2",
+            "H2",
+            "H2",
+            "H2",
+            "H2"
+          ],
+          "/does-not-exist": [
+            "H1",
+            "H2"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "keyboard-navigation",
+      "title": "Enable keyboard navigation for all elements",
+      "category": "accessibility",
+      "priority": "critical",
+      "status": "pass",
+      "evidence": "no axe focus-order violations; 0 focusable elements lack an accessible name",
+      "detail": {
+        "axe": {
+          "/": [],
+          "/privacy": [],
+          "/does-not-exist": []
+        },
+        "focusables": {
+          "/": {
+            "total": 17,
+            "negativeTabindex": 0,
+            "withoutAccessibleName": 0
+          },
+          "/privacy": {
+            "total": 5,
+            "negativeTabindex": 0,
+            "withoutAccessibleName": 0
+          },
+          "/does-not-exist": {
+            "total": 1,
+            "negativeTabindex": 0,
+            "withoutAccessibleName": 0
+          }
+        }
+      }
+    },
+    {
+      "slug": "skip-link",
+      "title": "Implement \"Skip to Content\" links",
+      "category": "accessibility",
+      "priority": "medium",
+      "status": "not-applicable",
+      "evidence": "no skip link; there is no navigation block to skip past and the first focusable element is already inside <main>",
+      "detail": {
+        "present": {
+          "/": false,
+          "/privacy": false,
+          "/does-not-exist": false
+        },
+        "first_focusable": {
+          "/": {
+            "tag": "INPUT",
+            "text": "",
+            "insideMain": true
+          },
+          "/privacy": {
+            "tag": "A",
+            "text": "Details below.",
+            "insideMain": true
+          },
+          "/does-not-exist": {
+            "tag": "A",
+            "text": "Back to the solver",
+            "insideMain": true
+          }
+        }
+      }
+    },
+    {
+      "slug": "canonical-url",
+      "title": "Set canonical URLs for all pages",
+      "category": "seo",
+      "priority": "high",
+      "status": "pass",
+      "evidence": "every indexed page declares a canonical link",
+      "detail": {
+        "/": "<link rel=\"canonical\" href=\"https://iomreliccalc.me/\">",
+        "/privacy": "<link rel=\"canonical\" href=\"https://iomreliccalc.me/privacy\">",
+        "/does-not-exist": ""
+      }
+    },
+    {
+      "slug": "h1",
+      "title": "Use a single descriptive H1",
+      "category": "seo",
+      "priority": "medium",
+      "status": "pass",
+      "evidence": "exactly one <h1> per page",
+      "detail": {
+        "/": 1,
+        "/privacy": 1,
+        "/does-not-exist": 1
+      }
+    },
+    {
+      "slug": "meta-description",
+      "title": "Write a meta description for each page",
+      "category": "seo",
+      "priority": "high",
+      "status": "pass",
+      "evidence": "every indexed page has a description of 50-165 characters; the 404 page is noindex, which the rule's utility-page exception covers",
+      "detail": {
+        "lengths": {
+          "/": 114,
+          "/privacy": 86,
+          "/does-not-exist": 0
+        },
+        "noindex": {
+          "/": false,
+          "/privacy": false,
+          "/does-not-exist": true
+        }
+      }
+    },
+    {
+      "slug": "meta-title",
+      "title": "Write a descriptive page title",
+      "category": "seo",
+      "priority": "high",
+      "status": "pass",
+      "evidence": "every indexed page has a title of 10-70 characters",
+      "detail": {
+        "/": {
+          "title": "Relic Solver \u2014 Idle Obelisk Miner Relic Calculator",
+          "length": 50
+        },
+        "/privacy": {
+          "title": "Privacy \u2014 Relic Solver",
+          "length": 22
+        },
+        "/does-not-exist": {
+          "title": "404 \u2014 Relic Solver",
+          "length": 18
+        }
+      }
+    },
+    {
+      "slug": "robots-txt",
+      "title": "Publish a robots.txt file",
+      "category": "seo",
+      "priority": "high",
+      "status": "pass",
+      "evidence": "/robots.txt answers 200",
+      "detail": {
+        "status": 200,
+        "bytes": 133
+      }
+    },
+    {
+      "slug": "sitemap",
+      "title": "Create and submit an XML sitemap",
+      "category": "seo",
+      "priority": "high",
+      "status": "pass",
+      "evidence": "/sitemap.xml answers 200. Whether it has been submitted to a search console cannot be read from here",
+      "detail": {
+        "status": 200,
+        "bytes": 469,
+        "submission": "unverifiable from this environment"
+      }
+    },
+    {
+      "slug": "structured-data",
+      "title": "Add structured data markup",
+      "category": "seo",
+      "priority": "high",
+      "status": "pass",
+      "evidence": "JSON-LD on the solver page parses and declares a type",
+      "detail": {
+        "types": [
+          "WebApplication"
+        ]
+      }
+    },
+    {
+      "slug": "browser-caching",
+      "title": "Enable browser caching",
+      "category": "performance",
+      "priority": "high",
+      "status": "pass",
+      "evidence": "HTML 'public, max-age=300'; fingerprinted static 'public, max-age=31536000, immutable'",
+      "detail": {
+        "html": "public, max-age=300",
+        "static": "public, max-age=31536000, immutable",
+        "sampled": "/static/js/solver-core.min.js?v=30091ecb"
+      }
+    },
+    {
+      "slug": "compression",
+      "title": "Enable text-based compression",
+      "category": "performance",
+      "priority": "high",
+      "status": "pass",
+      "evidence": "HTML negotiates br: 8482 bytes against 32360 uncompressed",
+      "detail": {
+        "content_encoding": "br",
+        "compressed_bytes": 8482,
+        "identity_bytes": 32360
+      }
+    },
+    {
+      "slug": "cumulative-layout-shift",
+      "title": "Minimize cumulative layout shift",
+      "category": "performance",
+      "priority": "high",
+      "status": "pass",
+      "evidence": "cumulative-layout-shift = 0.027 (score 1)",
+      "detail": {
+        "audit": "cumulative-layout-shift",
+        "displayValue": "0.027",
+        "numericValue": 0.026520189160487,
+        "score": 1,
+        "note": ""
+      }
+    },
+    {
+      "slug": "interaction-to-next-paint",
+      "title": "Optimize interaction to next paint",
+      "category": "performance",
+      "priority": "high",
+      "status": "pass",
+      "evidence": "total-blocking-time = 0\u00a0ms (score 1)",
+      "detail": {
+        "audit": "total-blocking-time",
+        "displayValue": "0\u00a0ms",
+        "numericValue": 0,
+        "score": 1,
+        "note": "INP has no lab equivalent; total-blocking-time is the lab proxy Lighthouse reports"
+      }
+    },
+    {
+      "slug": "largest-contentful-paint",
+      "title": "Optimize largest contentful paint",
+      "category": "performance",
+      "priority": "critical",
+      "status": "pass",
+      "evidence": "largest-contentful-paint = 0.8\u00a0s (score 1)",
+      "detail": {
+        "audit": "largest-contentful-paint",
+        "displayValue": "0.8\u00a0s",
+        "numericValue": 759.2270000000001,
+        "score": 1,
+        "note": ""
+      }
+    },
+    {
+      "slug": "dimensions",
+      "title": "Set explicit width and height on images",
+      "category": "images",
+      "priority": "high",
+      "status": "pass",
+      "evidence": "11 <img> elements, 0 missing width or height. A test also pins every sprite's declared size to its intrinsic size",
+      "detail": {
+        "missing": []
+      }
+    },
+    {
+      "slug": "optimized",
+      "title": "Optimise images for faster loading",
+      "category": "images",
+      "priority": "high",
+      "status": "pass",
+      "evidence": "11 images, 6278 bytes total, all WebP. AVIF measured and rejected: 3-8x larger below a kilobyte",
+      "detail": {
+        "bytes": {
+          "/static/images/kofi5.webp": 3972,
+          "/static/images/Relic_Chest.webp": 192,
+          "/static/images/Divine_Chest.webp": 226,
+          "/static/images/Divine_Relic_Cap.webp": 226,
+          "/static/images/Rainbow_Floor_Chance.webp": 298,
+          "/static/images/Supernova_Multiplier.webp": 174,
+          "/static/images/Rainbow_Floor_Multiplier.webp": 278,
+          "/static/images/5x_Fish_Tick_Chance.webp": 260,
+          "/static/images/Rainbow_Void_Portal_Chance.webp": 354,
+          "/static/images/sprChestRelicReroll_0.webp": 166,
+          "/static/images/Gem.webp": 132
+        },
+        "legacy_formats": []
+      }
+    },
+    {
+      "slug": "content-security-policy",
+      "title": "Implement a content security policy",
+      "category": "security",
+      "priority": "high",
+      "status": "pass",
+      "evidence": "policy present with no host-source and no unsafe keywords: default-src 'self'; script-src 'self'; style-src 'self' 'sha256-6gSovumnwc5oUuo/86oVJutQCmctzBLV3D01b/Johlg='; img-src 'self'; connect-src 'self'; font-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'",
+      "detail": {
+        "policy": "default-src 'self'; script-src 'self'; style-src 'self' 'sha256-6gSovumnwc5oUuo/86oVJutQCmctzBLV3D01b/Johlg='; img-src 'self'; connect-src 'self'; font-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'",
+        "problems": []
+      }
+    },
+    {
+      "slug": "https",
+      "title": "Serve all pages over HTTPS",
+      "category": "security",
+      "priority": "critical",
+      "status": "pass",
+      "evidence": "https://iomreliccalc.me/ answers with HSTS 'max-age=31536000; includeSubDomains'",
+      "detail": {
+        "hsts": "max-age=31536000; includeSubDomains",
+        "server": "cloudflare"
+      }
+    },
+    {
+      "slug": "referrer-policy",
+      "title": "Set a Referrer-Policy header",
+      "category": "security",
+      "priority": "medium",
+      "status": "pass",
+      "evidence": "Referrer-Policy: strict-origin-when-cross-origin",
+      "detail": {
+        "value": "strict-origin-when-cross-origin"
+      }
+    },
+    {
+      "slug": "x-content-type",
+      "title": "Set X-Content-Type-Options: nosniff",
+      "category": "security",
+      "priority": "high",
+      "status": "pass",
+      "evidence": "X-Content-Type-Options: nosniff",
+      "detail": {
+        "value": "nosniff"
+      }
+    },
+    {
+      "slug": "accessibility-testing",
+      "title": "Include accessibility testing",
+      "category": "testing",
+      "priority": "high",
+      "status": "pass",
+      "evidence": "tests/browser/test_accessibility.py runs axe-core over all three pages in Chromium, Firefox and WebKit as part of the browser suite",
+      "detail": {
+        "total_violations": {
+          "/": 0,
+          "/privacy": 0,
+          "/does-not-exist": 0
+        }
+      }
+    }
+  ]
+}
