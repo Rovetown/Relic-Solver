@@ -57,6 +57,14 @@ def compute_stats(df: pd.DataFrame, output: Path | None) -> None:
             lines.append(f"    {int(val):>2}: {count:>6,}  ({count / n * 100:5.1f}%)  {bar}")
         lines.append("")
 
+    if "ob" in df.columns:
+        _section("obelisk level", lines)
+        lines.append("  distribution:")
+        for val, count in df["ob"].value_counts().sort_index().items():
+            bar = "#" * min(int(count / n * 40), 40)
+            lines.append(f"    {int(val):>3}: {count:>6,}  ({count / n * 100:5.1f}%)  {bar}")
+        lines.append("")
+
     target_cols = [c for c in ["d1", "d2", "d3", "d4", "d5"] if c in df.columns]
     if target_cols:
         _section("targets", lines)

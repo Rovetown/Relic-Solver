@@ -69,6 +69,31 @@ on D1: the totals seen beforehand are 0, 1 and 2, and none of them has reached
 3. A type needs **threshold + 1** divines before it can receive its first drop,
 so D2 needs four, not three.
 
+### Obelisk level
+
+Divines owned are not the only gate. Your Obelisk level gates the same types,
+and **both** gates must be open before a type can drop:
+
+| Type | Divines owned | Obelisk level |
+|------|:-------------:|:-------------:|
+| D1 Rainbow Floor Chance | 0 | none |
+| D2 Supernova Multiplier | 3 | 23 |
+| D3 Rainbow Floor Multiplier | 6 | 25 |
+| D4 Fishing Ticks 5x Chance | 10 | 37 |
+| D5 Rainbow Void Portal Chance | 30 | 64 |
+
+Obelisk level does not change inside a reroll, so it is a fixed ceiling on the
+unlock tier rather than a per-drop check. A target on a type your level locks
+out is impossible, and the solver returns 0 for it without walking the chain.
+Locking the higher types can make a lower target **more** likely, because the
+drops that would have gone to them land on what is left.
+
+The page offers the level as five bands, one per threshold: below 23, 23 to 24,
+25 to 36, 37 to 63, and 64+, and starts on the lowest. `obelisk_level` is a
+required field of the `/solve` body: a request without it is answered with
+`400 Missing fields`, because a level the caller never stated cannot be
+guessed without changing the answer.
+
 ### Caps
 
 D1 is uncapped. D2 to D5 share one configurable cap, between 5 and 36. A type
@@ -90,8 +115,8 @@ smallest `k_max` with `P(K <= k_max) >= 1 - 1e-15`. For 150,000 chests that is
 about 25 possible counts instead of 150,000.
 
 **Walk the chain.** Each drop is one step. For every live state, work out which
-types are unlocked and still under the cap, split the state's probability
-equally between them, and move it.
+types are unlocked by divines owned and by Obelisk level and still under the
+cap, split the state's probability equally between them, and move it.
 
 **Absorb the winners.** A state that meets the target in every dimension is
 removed and its probability added to a running total. This is safe because
@@ -238,7 +263,7 @@ C4Container
     Container_Boundary(platform, "Heroku (EU region)") {
         Container(app, "Web Application", "Flask + gunicorn", "Routes, LBYL validation, NDJSON streaming, rate limiting, CSP with hashed inline styles")
         Container(solver, "Solver Library", "NumPy + SciPy", "4D Markov chain with absorbing states, binomial weighting, expected rerolls and gem cost")
-        Container(config, "Game Config", "Python module", "Divine chance 1/25000, unlock thresholds, caps 5-36, relic names")
+        Container(config, "Game Config", "Python module", "Divine chance 1/25000, unlock thresholds, Obelisk thresholds, caps 5-36, relic names")
     }
 
     ContainerDb_Ext(redis, "Redis Cloud", "Redis 30 MB", "Deterministic result cache, LRU eviction, no TTL")
@@ -334,7 +359,8 @@ flowchart TD
     subgraph Markov Chain Walk
         STEP["Select unlock tier
         from total divines
-        vs thresholds"]
+        vs thresholds, then
+        clamp to the Obelisk tier"]
         STEP --> WEIGHT["Weight probability
         $$\color{#7fdbff}\text{weighted} = \text{prob} \cdot w_{\text{tier}}$$"]
         WEIGHT --> D1["D1 transition
@@ -406,7 +432,7 @@ sequenceDiagram
     end
 
     Flask->>Flask: Normalize D2-D5 targets<br/>min(target, relic_cap)
-    Flask->>Flask: Build cache key<br/>solve:{chests}:{divines}:{cap}:{targets}
+    Flask->>Flask: Build cache key<br/>solve:{chests}:{divines}:{cap}:{obelisk}:{targets}
 
     Flask->>Redis: GET cache_key
 
@@ -421,7 +447,7 @@ sequenceDiagram
     else Cache miss
         Redis-->>Flask: null
 
-        Flask->>Solver: Start worker thread<br/>solve(chests, divines, targets,<br/>cap, progress_callback)
+        Flask->>Solver: Start worker thread<br/>solve(chests, divines, targets,<br/>cap, obelisk_level, progress_callback)
 
         loop Every ~1% progress
             Solver-->>Flask: progress_callback(step, total)

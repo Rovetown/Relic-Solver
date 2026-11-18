@@ -137,6 +137,23 @@
                         max="{{ cfg.MAX_RELIC_CAP }}"
                 >
             </div>
+
+            <div class="box">
+                <label for="obeliskLevel">
+                    <img src="{{ url_for('static', filename='images/Obelisk_Level.webp') }}" alt=""
+                         class="label-icon label-icon--tall" width="32" height="40">
+                    Obelisk Level
+                </label>
+                <select
+                        id="obeliskLevel"
+                        name="obeliskLevel"
+                        aria-describedby="help-obeliskLevel"
+                >
+                    {% for value, band in cfg.OBELISK_LEVEL_BANDS %}
+                    <option value="{{ value }}">{{ band }}</option>
+                    {% endfor %}
+                </select>
+            </div>
         </fieldset>
 
         <div class="help-cell">
@@ -160,6 +177,11 @@
                     </li>
                     <li id="help-relicCap">
                         <span class="label-accent">Divine Relic Cap</span>: Your divine relic cap. example sources: Cthulhu card, divine challenges. Values closer to 21 will slow down calculations a lot!
+                    </li>
+                    <li id="help-obeliskLevel">
+                        <span class="label-accent">Obelisk Level</span>: Your current Obelisk
+                        level. It gates which divine relics can roll at all, on top of the
+                        number of divine relics you already own.
                     </li>
                 </ul>
             </div>
@@ -196,12 +218,15 @@
                         id="targetD2"
                         name="targetD2"
                         type="number"
-                        aria-describedby="help-targetD2"
+                        aria-describedby="help-targetD2 lock-targetD2"
                         aria-invalid="false"
                         value="0"
                         min="0"
                         max="{{ cfg.MAX_RELIC_CAP }}"
                 >
+                <p class="lock-note" id="lock-targetD2" data-ob-required="{{ cfg.OBELISK_D2_THRESHOLD }}" hidden>
+                    Locked: needs Obelisk level {{ cfg.OBELISK_D2_THRESHOLD }}+
+                </p>
             </div>
 
             <div class="box">
@@ -214,12 +239,15 @@
                         id="targetD3"
                         name="targetD3"
                         type="number"
-                        aria-describedby="help-targetD3"
+                        aria-describedby="help-targetD3 lock-targetD3"
                         aria-invalid="false"
                         value="0"
                         min="0"
                         max="{{ cfg.MAX_RELIC_CAP }}"
                 >
+                <p class="lock-note" id="lock-targetD3" data-ob-required="{{ cfg.OBELISK_D3_THRESHOLD }}" hidden>
+                    Locked: needs Obelisk level {{ cfg.OBELISK_D3_THRESHOLD }}+
+                </p>
             </div>
 
             <div class="box">
@@ -232,12 +260,15 @@
                         id="targetD4"
                         name="targetD4"
                         type="number"
-                        aria-describedby="help-targetD4"
+                        aria-describedby="help-targetD4 lock-targetD4"
                         aria-invalid="false"
                         value="0"
                         min="0"
                         max="{{ cfg.MAX_RELIC_CAP }}"
                 >
+                <p class="lock-note" id="lock-targetD4" data-ob-required="{{ cfg.OBELISK_D4_THRESHOLD }}" hidden>
+                    Locked: needs Obelisk level {{ cfg.OBELISK_D4_THRESHOLD }}+
+                </p>
             </div>
 
             <div class="box">
@@ -250,12 +281,15 @@
                         id="targetD5"
                         name="targetD5"
                         type="number"
-                        aria-describedby="help-targetD5"
+                        aria-describedby="help-targetD5 lock-targetD5"
                         aria-invalid="false"
                         value="0"
                         min="0"
                         max="{{ cfg.MAX_RELIC_CAP }}"
                 >
+                <p class="lock-note" id="lock-targetD5" data-ob-required="{{ cfg.OBELISK_D5_THRESHOLD }}" hidden>
+                    Locked: needs Obelisk level {{ cfg.OBELISK_D5_THRESHOLD }}+
+                </p>
             </div>
         </fieldset>
 
@@ -292,8 +326,10 @@
                     </li>
                 </ul>
                 <div class="help-collapse__tip">
-                    Tip: For realistic results, set non‑zero targets for only 1–2 relic
-                    types and leave the others at 0.
+                    A relic you cannot roll yet cannot be a target: every relic except
+                    Rainbow Floor Chance needs both enough divine relics owned and a high
+                    enough Obelisk level. Tip: For realistic results, set non‑zero targets
+                    for only 1–2 relic types and leave the others at 0.
                 </div>
             </div>
         </div>
@@ -370,24 +406,21 @@
 <dialog class="whatsnew" id="whatsNew" aria-labelledby="whatsNewTitle">
     <div class="whatsnew__body">
         <h2 class="whatsnew__title" id="whatsNewTitle">What's new</h2>
-        <p class="whatsnew__lede">A few things changed since you were last here.</p>
+        <p class="whatsnew__lede">The solver was missing half of the unlock rule.
+            It is not any more.</p>
         <ul class="whatsnew__list">
-            <li><span class="whatsnew__what">The site loads faster.</span>
-                <span class="whatsnew__why">Pages come from a server near you now,
-                    and there is less to download.</span></li>
-            <li><span class="whatsnew__what">New: a privacy page.</span>
-                <span class="whatsnew__why">It says what the site keeps and what it
-                    does not. Linked at the bottom.</span></li>
-            <li><span class="whatsnew__what">New: a support button.</span>
-                <span class="whatsnew__why">Top-right corner, if you ever feel like
-                    buying me a coffee.</span></li>
-            <li><span class="whatsnew__what">New: links at the bottom.</span>
-                <span class="whatsnew__why">Source code and bug reports on GitHub,
-                    and a Discord to ask things in.</span></li>
-            <li><span class="whatsnew__what">Tidier on phones.</span>
-                <span class="whatsnew__why">A sharper icon in your browser tab, and
-                    the input boxes line up properly.</span></li>
+            <li><span class="whatsnew__what">Fixed: Obelisk Level is now asked for.</span>
+                <span class="whatsnew__why">Divine relics have always needed a high
+                    enough Obelisk level as well as enough divine relics owned. The
+                    solver only ever checked the relic count, so it was too hopeful
+                    about relics your level cannot roll yet. Set your level in the
+                    inputs and the odds account for it.</span></li>
+            <li><span class="whatsnew__what">Targets you cannot roll say so.</span>
+                <span class="whatsnew__why">A relic your Obelisk level locks out is
+                    marked under its box, so a 0% answer is never a mystery.</span></li>
         </ul>
+        <p class="whatsnew__thanks">Thanks to <span class="whatsnew__credit">minnie1089</span>
+            on Discord for catching what I had overlooked.</p>
     </div>
     <div class="whatsnew__foot">
         <button type="button" class="btn-pixel btn-pixel--green" data-whatsnew-dismiss>

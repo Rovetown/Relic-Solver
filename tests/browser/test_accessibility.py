@@ -81,15 +81,20 @@ def test_each_input_has_an_accessible_description(
 ) -> None:
     page.goto(live_server + "/")
     unresolved = page.evaluate(
-        """() => Array.from(document.querySelectorAll('input[aria-describedby]'))
-            .map(el => ({
-                id: el.id,
-                ref: el.getAttribute('aria-describedby'),
-                text: (document.getElementById(
-                    el.getAttribute('aria-describedby'),
-                )?.textContent || '').trim(),
-            }))
-            .filter(i => i.text.length === 0)"""
+        r"""() => Array.from(document.querySelectorAll(
+
+            'input[aria-describedby], select[aria-describedby]',
+        ))
+            .flatMap(el => el.getAttribute('aria-describedby')
+                .split(/\s+/)
+                .filter(ref => ref.length > 0)
+                .map(ref => ({
+                    id: el.id,
+                    ref: ref,
+                    text: (document.getElementById(ref)?.textContent || '').trim(),
+                })))
+            .filter(i => i.text.length === 0)
+        """
                                                 ,
     )
     assert unresolved == [], unresolved
@@ -115,6 +120,7 @@ def test_the_whole_form_is_reachable_by_keyboard(
         "totalRelicChests",
         "totalDivineChests",
         "relicCap",
+        "obeliskLevel",
         "targetD1",
         "targetD2",
         "targetD3",

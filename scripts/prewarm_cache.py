@@ -22,9 +22,11 @@ from rich.progress import (
 )
 
 from relic_solver import expected_gems, expected_rerolls, solve
+from relic_solver.config import DEFAULT_OBELISK_LEVEL
 
 CAP = -1
 _BATCH_SIZE = 1_000
+_PREWARM_OBELISK_LEVEL = DEFAULT_OBELISK_LEVEL
 _SOLVE_TIMEOUT = 120.0
 
 _log = logging.getLogger(__name__)
@@ -81,7 +83,9 @@ def _cache_key(
     targets: tuple[int, ...],
 ) -> str:
     target_csv = ",".join(str(t) for t in targets)
-    return f"solve:{chests}:{divines}:{cap}:{target_csv}"
+    return (
+        f"solve:{chests}:{divines}:{cap}:{_PREWARM_OBELISK_LEVEL}:{target_csv}"
+    )
 
 
 def _normalize_targets(targets: tuple[int, ...], cap: int) -> tuple[int, ...]:
@@ -108,6 +112,7 @@ def _solve_one(
             divines,
             targets,
             relic_cap=cap,
+            obelisk_level=_PREWARM_OBELISK_LEVEL,
             max_seconds=_SOLVE_TIMEOUT,
         )
     except TimeoutError:

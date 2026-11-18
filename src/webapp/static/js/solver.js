@@ -48,11 +48,16 @@
         "targetD1", "targetD2", "targetD3", "targetD4", "targetD5",
     ];
 
+    var selectIds = ["obeliskLevel"];
+
+    var fieldIds = inputIds.concat(selectIds);
+
 
     var paramMap = {
         totalRelicChests: "chests",
         totalDivineChests: "divine",
         relicCap: "cap",
+        obeliskLevel: "ob",
         targetD1: "d1",
         targetD2: "d2",
         targetD3: "d3",
@@ -60,18 +65,30 @@
         targetD5: "d5",
     };
 
+    function setFieldValue(id, val) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        if (el.tagName === "SELECT") {
+            var known = Array.prototype.some.call(el.options, function (opt) {
+                return opt.value === val;
+            });
+            if (!known) return;
+        }
+        el.value = val;
+    }
+
     function loadInputs() {
 
         var params = new URLSearchParams(window.location.search);
-        var hasUrlParams = inputIds.some(function (id) {
+        var hasUrlParams = fieldIds.some(function (id) {
             return params.has(paramMap[id]);
         });
 
         if (hasUrlParams) {
-            inputIds.forEach(function (id) {
+            fieldIds.forEach(function (id) {
                 var val = params.get(paramMap[id]);
                 if (val !== null) {
-                    document.getElementById(id).value = val;
+                    setFieldValue(id, val);
                 }
             });
         } else {
@@ -84,9 +101,9 @@
                     localStorage.removeItem(STORAGE_KEY);
                     return;
                 }
-                inputIds.forEach(function (id) {
+                fieldIds.forEach(function (id) {
                     if (values[id] != null) {
-                        document.getElementById(id).value = values[id];
+                        setFieldValue(id, values[id]);
                     }
                 });
             } catch {}
@@ -96,7 +113,7 @@
     function saveInputs() {
         var data = {};
         var params = new URLSearchParams();
-        inputIds.forEach(function (id) {
+        fieldIds.forEach(function (id) {
             var val = document.getElementById(id).value;
             data[id] = val;
 
@@ -161,6 +178,37 @@
     });
 
 
+    var obeliskSelect = document.getElementById("obeliskLevel");
+    var lockNotes = document.querySelectorAll("[data-ob-required]");
+
+    function obeliskLevel() {
+        var val = parseInt(obeliskSelect.value, 10);
+        return isNaN(val) ? 0 : val;
+    }
+
+    function lockedTargets() {
+        var level = obeliskLevel();
+        var locked = [];
+        Array.prototype.forEach.call(lockNotes, function (note) {
+            var need = parseInt(note.getAttribute("data-ob-required"), 10);
+            var unmet = level < need;
+            note.hidden = !unmet;
+            var field = document.getElementById(note.id.replace("lock-", ""));
+            if (unmet && field && parseInt(field.value, 10) > 0) {
+                locked.push({el: field, need: need});
+            }
+        });
+        return locked;
+    }
+
+    obeliskSelect.addEventListener("change", function () {
+        lockedTargets();
+        saveInputsSoon();
+    });
+
+    lockedTargets();
+
+
     function labelTextFor(el) {
         var label = document.querySelector('label[for="' + el.id + '"]');
         return label ? label.textContent.trim() : el.id;
@@ -181,7 +229,16 @@
                 problems.push({el: el, text: labelTextFor(el) + " " + problem + "."});
             }
         });
-        if (problems.length === 0) return true;
+        if (problems.length === 0) {
+            var locked = lockedTargets();
+            if (locked.length === 0) return true;
+            showError(locked.map(function (lock) {
+                return labelTextFor(lock.el) +
+                    " needs Obelisk level " + lock.need + "+ to roll at all.";
+            }).join(" "));
+            locked[0].el.focus();
+            return false;
+        }
         showError(problems.map(function (p) { return p.text; }).join(" "));
         problems[0].el.focus();
         return false;
@@ -302,6 +359,7 @@
             total_relic_chests: getInt("totalRelicChests"),
             divine_chests: getInt("totalDivineChests"),
             relic_cap: getInt("relicCap"),
+            obelisk_level: obeliskLevel(),
             targets: [
                 getInt("targetD1"),
                 getInt("targetD2"),
@@ -462,7 +520,7 @@
     "use strict";
 
     var KEY = "relicSolver.whatsNew";
-    var VERSION = "2026-10-24";
+    var VERSION = "2026-11-18";
 
     var dialog = document.getElementById("whatsNew");
 

@@ -65,8 +65,11 @@ def _write_json(data: object, output: Path | None) -> None:
         print(text)
 
 
-_ANALYTICS_FIELDS = ["ts", "chests", "divines", "cap", "d1", "d2", "d3", "d4", "d5", "prob", "ms"]
-_CACHE_FIELDS = ["chests", "divines", "cap", "d2", "d3", "d4", "d5"]
+_ANALYTICS_FIELDS = [
+    "ts", "chests", "divines", "cap", "ob",
+    "d1", "d2", "d3", "d4", "d5", "prob", "ms",
+]
+_CACHE_FIELDS = ["chests", "divines", "cap", "ob", "d1", "d2", "d3", "d4", "d5"]
 
 
 def export_analytics(
@@ -101,6 +104,7 @@ def export_analytics(
             "chests": e.get("chests", ""),
             "divines": e.get("divines", ""),
             "cap": e.get("cap", ""),
+            "ob": e.get("ob", ""),
             "d1": targets[0] if len(targets) > 0 else "",
             "d2": targets[1] if len(targets) > 1 else "",
             "d3": targets[2] if len(targets) > 2 else "",
@@ -121,17 +125,19 @@ def export_cache_keys(
     rows: list[dict[str, object]] = []
     for key in client.scan_iter("solve:*"):
         parts = key.split(":")
-        if len(parts) != 5:
+        if len(parts) != 6:
             continue
-        target_parts = parts[4].split(",")
+        target_parts = parts[5].split(",")
         rows.append({
             "chests": parts[1],
             "divines": parts[2],
             "cap": parts[3],
-            "d2": target_parts[0] if len(target_parts) > 0 else "",
-            "d3": target_parts[1] if len(target_parts) > 1 else "",
-            "d4": target_parts[2] if len(target_parts) > 2 else "",
-            "d5": target_parts[3] if len(target_parts) > 3 else "",
+            "ob": parts[4],
+            "d1": target_parts[0] if len(target_parts) > 0 else "",
+            "d2": target_parts[1] if len(target_parts) > 1 else "",
+            "d3": target_parts[2] if len(target_parts) > 2 else "",
+            "d4": target_parts[3] if len(target_parts) > 3 else "",
+            "d5": target_parts[4] if len(target_parts) > 4 else "",
         })
 
     if not rows:

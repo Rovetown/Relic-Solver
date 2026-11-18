@@ -5,11 +5,17 @@ import pytest
 
 from relic_solver.config import (
     COST_PER_REROLL,
+    DEFAULT_OBELISK_LEVEL,
     DEFAULT_RELIC_CAP,
     DIVINE_CHANCE,
     MAX_RELIC_CAP,
     MIN_RELIC_CAP,
     NUM_RELIC_TYPES,
+    OBELISK_D2_THRESHOLD,
+    OBELISK_D3_THRESHOLD,
+    OBELISK_D4_THRESHOLD,
+    OBELISK_D5_THRESHOLD,
+    OBELISK_LEVEL_BANDS,
     RATE_LIMIT_DEFAULT,
     RATE_LIMIT_SOLVE,
     UNLOCK_D2_THRESHOLD,
@@ -25,6 +31,7 @@ from relic_solver.solver import (
     _solve_numpy,
     expected_gems,
     expected_rerolls,
+    obelisk_tier_cap,
     solve,
 )
 
@@ -48,6 +55,35 @@ class TestConfigRegression:
         assert UNLOCK_D3_THRESHOLD == 6
         assert UNLOCK_D4_THRESHOLD == 10
         assert UNLOCK_D5_THRESHOLD == 30
+
+    def test_obelisk_thresholds(self) -> None:
+        assert OBELISK_D2_THRESHOLD == 23
+        assert OBELISK_D3_THRESHOLD == 25
+        assert OBELISK_D4_THRESHOLD == 37
+        assert OBELISK_D5_THRESHOLD == 64
+
+    def test_obelisk_thresholds_are_ascending(self) -> None:
+        thresholds = (
+            OBELISK_D2_THRESHOLD,
+            OBELISK_D3_THRESHOLD,
+            OBELISK_D4_THRESHOLD,
+            OBELISK_D5_THRESHOLD,
+        )
+        assert list(thresholds) == sorted(thresholds)
+
+    def test_default_obelisk_level_unlocks_everything(self) -> None:
+        assert DEFAULT_OBELISK_LEVEL == OBELISK_D5_THRESHOLD
+
+    def test_obelisk_bands_cover_every_threshold(self) -> None:
+        assert len(OBELISK_LEVEL_BANDS) == NUM_RELIC_TYPES
+        values = [value for value, _label in OBELISK_LEVEL_BANDS]
+        assert values == [
+            0,
+            OBELISK_D2_THRESHOLD,
+            OBELISK_D3_THRESHOLD,
+            OBELISK_D4_THRESHOLD,
+            OBELISK_D5_THRESHOLD,
+        ]
 
     def test_cap_bounds_are_coherent(self) -> None:
         assert MIN_RELIC_CAP <= DEFAULT_RELIC_CAP <= MAX_RELIC_CAP
@@ -609,6 +645,109 @@ class TestCrossValidation:
         assert result_numpy == pytest.approx(result_dict, abs=1e-12), (
             f"Mismatch: numpy={result_numpy}, dict={result_dict}"
         )
+
+    @pytest.mark.parametrize("obelisk_cap", [0, 1, 2, 3, 4])
+    def test_numpy_matches_dict_under_obelisk_cap(self, obelisk_cap: int) -> None:
+        args = _prepare_solver_args(0, 40, (2, 1, 1, 0, 0), 5)
+        if args["d_max"] == 0:
+            pytest.skip("d_max=0 - trivial case handled before dispatch")
+
+        result_dict = _solve_dict(**args, obelisk_cap=obelisk_cap)
+        result_numpy = _solve_numpy(**args, obelisk_cap=obelisk_cap)
+
+        assert result_numpy == pytest.approx(result_dict, abs=1e-12), (
+            f"Mismatch at cap {obelisk_cap}: "
+            f"numpy={result_numpy}, dict={result_dict}"
+        )
+
+
+class TestObeliskTierCap:
+    def test_below_first_threshold_only_d1(self) -> None:
+        assert obelisk_tier_cap(0) == 0
+        assert obelisk_tier_cap(OBELISK_D2_THRESHOLD - 1) == 0
+
+    def test_at_d2_threshold(self) -> None:
+        assert obelisk_tier_cap(OBELISK_D2_THRESHOLD) == 1
+        assert obelisk_tier_cap(OBELISK_D3_THRESHOLD - 1) == 1
+
+    def test_at_d3_threshold(self) -> None:
+        assert obelisk_tier_cap(OBELISK_D3_THRESHOLD) == 2
+        assert obelisk_tier_cap(OBELISK_D4_THRESHOLD - 1) == 2
+
+    def test_at_d4_threshold(self) -> None:
+        assert obelisk_tier_cap(OBELISK_D4_THRESHOLD) == 3
+        assert obelisk_tier_cap(OBELISK_D5_THRESHOLD - 1) == 3
+
+    def test_at_d5_threshold(self) -> None:
+        assert obelisk_tier_cap(OBELISK_D5_THRESHOLD) == 4
+        assert obelisk_tier_cap(OBELISK_D5_THRESHOLD + 100) == 4
+
+
+class TestObeliskGating:
+    def test_locked_relic_target_is_impossible(self) -> None:
+        assert solve(0, 100, (0, 1, 0, 0, 0), obelisk_level=0) == 0.0
+
+    def test_d2_unlocks_at_its_threshold(self) -> None:
+        below = solve(0, 100, (0, 1, 0, 0, 0), obelisk_level=OBELISK_D2_THRESHOLD - 1)
+        at = solve(0, 100, (0, 1, 0, 0, 0), obelisk_level=OBELISK_D2_THRESHOLD)
+        assert below == 0.0
+        assert at > 0.0
+
+    def test_d3_needs_more_than_d2_level(self) -> None:
+        assert solve(0, 100, (0, 0, 1, 0, 0), obelisk_level=OBELISK_D2_THRESHOLD) == 0.0
+        assert solve(0, 100, (0, 0, 1, 0, 0), obelisk_level=OBELISK_D3_THRESHOLD) > 0.0
+
+    def test_d4_needs_its_own_threshold(self) -> None:
+        assert solve(0, 100, (0, 0, 0, 1, 0), obelisk_level=OBELISK_D3_THRESHOLD) == 0.0
+        assert solve(0, 100, (0, 0, 0, 1, 0), obelisk_level=OBELISK_D4_THRESHOLD) > 0.0
+
+    def test_d5_needs_its_own_threshold(self) -> None:
+        assert solve(0, 100, (0, 0, 0, 0, 1), obelisk_level=OBELISK_D4_THRESHOLD) == 0.0
+        assert solve(0, 100, (0, 0, 0, 0, 1), obelisk_level=OBELISK_D5_THRESHOLD) > 0.0
+
+    def test_divine_count_still_gates_above_obelisk(self) -> None:
+        assert solve(0, 3, (0, 1, 0, 0, 0), obelisk_level=OBELISK_D5_THRESHOLD) == 0.0
+        assert solve(0, 4, (0, 1, 0, 0, 0), obelisk_level=OBELISK_D5_THRESHOLD) > 0.0
+
+    def test_d1_is_never_gated(self) -> None:
+        assert solve(0, 1, (1, 0, 0, 0, 0), obelisk_level=0) == 1.0
+
+    def test_zero_target_is_certain_at_any_level(self) -> None:
+        assert solve(0, 0, ZERO_TARGET, obelisk_level=0) == 1.0
+
+    def test_locking_higher_relics_helps_lower_ones(self) -> None:
+        target = (0, 5, 0, 0, 0)
+        gated = solve(0, 60, target, obelisk_level=OBELISK_D2_THRESHOLD, relic_cap=5)
+        open_all = solve(0, 60, target, obelisk_level=OBELISK_D5_THRESHOLD, relic_cap=5)
+        assert gated > open_all
+
+    def test_default_level_matches_fully_unlocked(self) -> None:
+        target = (3, 1, 1, 0, 0)
+        assert solve(0, 40, target) == pytest.approx(
+            solve(0, 40, target, obelisk_level=OBELISK_D5_THRESHOLD),
+        )
+
+    def test_negative_level_rejected(self) -> None:
+        with pytest.raises(ValueError, match="non-negative"):
+            solve(0, 10, ZERO_TARGET, obelisk_level=-1)
+
+    def test_drop_distribution_respects_the_cap(self) -> None:
+        dist = _get_drop_distribution(
+            (0, 0, 0, 0),
+            total_divines=UNLOCK_D5_THRESHOLD,
+            relic_cap=5,
+            obelisk_cap=1,
+        )
+        assert set(dist.keys()) == {0, 1}
+
+    def test_drop_distribution_cap_zero_leaves_only_d1(self) -> None:
+        dist = _get_drop_distribution(
+            (0, 0, 0, 0),
+            total_divines=UNLOCK_D5_THRESHOLD,
+            relic_cap=5,
+            obelisk_cap=0,
+        )
+        assert dist == {0: 1.0}
 
 
 class TestBenchmarks:

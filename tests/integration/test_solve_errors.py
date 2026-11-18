@@ -11,6 +11,7 @@ VALID_PAYLOAD: dict[str, Any] = {
     "total_relic_chests": 100,
     "divine_chests": 1,
     "relic_cap": 5,
+    "obelisk_level": 64,
     "targets": [1, 0, 0, 0, 0],
 }
 

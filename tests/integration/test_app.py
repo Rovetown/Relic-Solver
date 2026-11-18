@@ -19,8 +19,12 @@ import app as app_module
 from app import app as flask_app
 from relic_solver.config import (
     DEFAULT_RELIC_CAP,
+    MAX_OBELISK_LEVEL,
     MAX_RELIC_CAP,
     MIN_RELIC_CAP,
+    OBELISK_D2_THRESHOLD,
+    OBELISK_D5_THRESHOLD,
+    OBELISK_LEVEL_BANDS,
 )
 from tests.integration.conftest import FakeRedis
 
@@ -153,6 +157,7 @@ class TestIndexRoute:
             "totalRelicChests",
             "totalDivineChests",
             "relicCap",
+            "obeliskLevel",
             "targetD1",
             "targetD2",
             "targetD3",
@@ -160,9 +165,32 @@ class TestIndexRoute:
             "targetD5",
         ]
         for field in fields:
-            assert f'aria-describedby="help-{field}"' in html, field
+            assert f'aria-describedby="help-{field}' in html, field
             assert f'id="help-{field}"' in html, field
             assert f'<label for="{field}"' in html, field
+
+    def test_every_gated_target_names_its_lock_note(
+        self,
+        client: FlaskClient,
+    ) -> None:
+        html = client.get("/").get_data(as_text=True)
+        gated = {
+            "targetD2": OBELISK_D2_THRESHOLD,
+            "targetD3": 25,
+            "targetD4": 37,
+            "targetD5": OBELISK_D5_THRESHOLD,
+        }
+        for field, threshold in gated.items():
+            assert f'aria-describedby="help-{field} lock-{field}"' in html, field
+            assert f'id="lock-{field}"' in html, field
+            assert f'data-ob-required="{threshold}"' in html, field
+
+    def test_the_obelisk_level_offers_every_band(self, client: FlaskClient) -> None:
+        html = client.get("/").get_data(as_text=True)
+        assert '<select' in html
+        assert 'id="obeliskLevel"' in html
+        for value, label in OBELISK_LEVEL_BANDS:
+            assert f'<option value="{value}">{label}</option>' in html, label
 
     def test_inputs_start_in_a_valid_state(self, client: FlaskClient) -> None:
         html = client.get("/").get_data(as_text=True)
@@ -419,6 +447,7 @@ class TestStaticRoutes:
                 "total_relic_chests": 10,
                 "divine_chests": 1,
                 "relic_cap": 20,
+                "obelisk_level": OBELISK_D5_THRESHOLD,
                 "targets": [1, 0, 0, 0, 0],
             },
         )
@@ -510,6 +539,7 @@ class TestSolveValidation:
                 "total_relic_chests": 1000,
                 "divine_chests": 5,
                 "relic_cap": MIN_RELIC_CAP - 1,
+                "obelisk_level": OBELISK_D5_THRESHOLD,
                 "targets": [1, 0, 0, 0, 0],
             },
         )
@@ -522,6 +552,7 @@ class TestSolveValidation:
                 "total_relic_chests": 1000,
                 "divine_chests": 5,
                 "relic_cap": MAX_RELIC_CAP + 1,
+                "obelisk_level": OBELISK_D5_THRESHOLD,
                 "targets": [1, 0, 0, 0, 0],
             },
         )
@@ -534,6 +565,7 @@ class TestSolveValidation:
                 "total_relic_chests": -1,
                 "divine_chests": 5,
                 "relic_cap": DEFAULT_RELIC_CAP,
+                "obelisk_level": OBELISK_D5_THRESHOLD,
                 "targets": [1, 0, 0, 0, 0],
             },
         )
@@ -546,6 +578,7 @@ class TestSolveValidation:
                 "total_relic_chests": 1000,
                 "divine_chests": 5,
                 "relic_cap": DEFAULT_RELIC_CAP,
+                "obelisk_level": OBELISK_D5_THRESHOLD,
                 "targets": [1, 0, 0],
             },
         )
@@ -558,11 +591,136 @@ class TestSolveValidation:
                 "total_relic_chests": 1000,
                 "divine_chests": 5,
                 "relic_cap": DEFAULT_RELIC_CAP,
+                "obelisk_level": OBELISK_D5_THRESHOLD,
                 "targets": [0, MAX_RELIC_CAP + 1, 0, 0, 0],
             },
         )
         assert resp.status_code == 400
         assert "must not exceed" in resp.get_json()["error"]
+
+
+class TestObeliskLevel:
+    def test_accepted_and_echoed_in_a_result(self, client: FlaskClient) -> None:
+        resp = client.post(
+            "/solve", json={
+                "total_relic_chests": 0,
+                "divine_chests": 5,
+                "relic_cap": DEFAULT_RELIC_CAP,
+                "obelisk_level": OBELISK_D5_THRESHOLD,
+                "targets": [1, 0, 0, 0, 0],
+            },
+        )
+        assert resp.status_code == 200
+        results = _parse_ndjson_results(resp)
+        assert results[0]["probability"] == 1.0
+
+    def test_an_omitted_level_is_rejected(self, client: FlaskClient) -> None:
+        resp = client.post(
+            "/solve", json={
+                "total_relic_chests": 0,
+                "divine_chests": 40,
+                "relic_cap": DEFAULT_RELIC_CAP,
+                "targets": [0, 1, 0, 0, 0],
+            },
+        )
+        assert resp.status_code == 400
+        error = resp.get_json()["error"]
+        assert "Missing fields" in error
+        assert "obelisk_level" in error
+
+    def test_locked_relic_is_impossible(self, client: FlaskClient) -> None:
+        resp = client.post(
+            "/solve", json={
+                "total_relic_chests": 0,
+                "divine_chests": 100,
+                "relic_cap": DEFAULT_RELIC_CAP,
+                "obelisk_level": 0,
+                "targets": [0, 1, 0, 0, 0],
+            },
+        )
+        results = _parse_ndjson_results(resp)
+        assert results[0]["probability"] == 0.0
+
+    def test_unlocked_relic_is_possible(self, client: FlaskClient) -> None:
+        resp = client.post(
+            "/solve", json={
+                "total_relic_chests": 0,
+                "divine_chests": 100,
+                "relic_cap": DEFAULT_RELIC_CAP,
+                "obelisk_level": OBELISK_D2_THRESHOLD,
+                "targets": [0, 1, 0, 0, 0],
+            },
+        )
+        results = _parse_ndjson_results(resp)
+        assert results[0]["probability"] > 0.0
+
+    def test_non_integer_level_rejected(self, client: FlaskClient) -> None:
+        resp = client.post(
+            "/solve", json={
+                "total_relic_chests": 1000,
+                "divine_chests": 5,
+                "relic_cap": DEFAULT_RELIC_CAP,
+                "obelisk_level": 23.5,
+                "targets": [1, 0, 0, 0, 0],
+            },
+        )
+        assert resp.status_code == 400
+        assert "obelisk_level" in resp.get_json()["error"]
+
+    def test_negative_level_rejected(self, client: FlaskClient) -> None:
+        resp = client.post(
+            "/solve", json={
+                "total_relic_chests": 1000,
+                "divine_chests": 5,
+                "relic_cap": DEFAULT_RELIC_CAP,
+                "obelisk_level": -1,
+                "targets": [1, 0, 0, 0, 0],
+            },
+        )
+        assert resp.status_code == 400
+        assert "obelisk_level" in resp.get_json()["error"]
+
+    def test_level_above_maximum_rejected(self, client: FlaskClient) -> None:
+        resp = client.post(
+            "/solve", json={
+                "total_relic_chests": 1000,
+                "divine_chests": 5,
+                "relic_cap": DEFAULT_RELIC_CAP,
+                "obelisk_level": MAX_OBELISK_LEVEL + 1,
+                "targets": [1, 0, 0, 0, 0],
+            },
+        )
+        assert resp.status_code == 400
+        assert "obelisk_level" in resp.get_json()["error"]
+
+    def test_level_is_part_of_the_cache_key(
+        self,
+        client: FlaskClient,
+        redis_client: FakeRedis,
+    ) -> None:
+        base: dict[str, object] = {
+            "total_relic_chests": 0,
+            "divine_chests": 40,
+            "relic_cap": DEFAULT_RELIC_CAP,
+            "targets": [0, 1, 0, 0, 0],
+        }
+        first = client.post(
+            "/solve",
+            json={**base, "obelisk_level": OBELISK_D5_THRESHOLD},
+        )
+        _ = first.data
+        second = client.post(
+            "/solve",
+            json={**base, "obelisk_level": OBELISK_D2_THRESHOLD},
+        )
+        results = _parse_ndjson_results(second)
+        assert "cached" not in results[0]
+
+        again = client.post(
+            "/solve",
+            json={**base, "obelisk_level": OBELISK_D2_THRESHOLD},
+        )
+        assert _parse_ndjson_results(again)[0]["cached"] is True
 
 
 class TestHealthEndpoint:
@@ -776,6 +934,7 @@ class TestCacheIntegration:
                 "total_relic_chests": 0,
                 "divine_chests": 5,
                 "relic_cap": DEFAULT_RELIC_CAP,
+                "obelisk_level": OBELISK_D5_THRESHOLD,
                 "targets": [1, 0, 0, 0, 0],
             },
         )
@@ -798,6 +957,7 @@ class TestSolveStreaming:
                 "total_relic_chests": 0,
                 "divine_chests": 5,
                 "relic_cap": DEFAULT_RELIC_CAP,
+                "obelisk_level": OBELISK_D5_THRESHOLD,
                 "targets": [1, 0, 0, 0, 0],
             },
         )
@@ -810,6 +970,7 @@ class TestSolveStreaming:
                 "total_relic_chests": 0,
                 "divine_chests": 5,
                 "relic_cap": DEFAULT_RELIC_CAP,
+                "obelisk_level": OBELISK_D5_THRESHOLD,
                 "targets": [1, 0, 0, 0, 0],
             },
         )
@@ -823,6 +984,7 @@ class TestSolveStreaming:
                 "total_relic_chests": 0,
                 "divine_chests": 0,
                 "relic_cap": DEFAULT_RELIC_CAP,
+                "obelisk_level": OBELISK_D5_THRESHOLD,
                 "targets": [0, 0, 0, 0, 0],
             },
         )
@@ -835,6 +997,7 @@ class TestSolveStreaming:
                 "total_relic_chests": 0,
                 "divine_chests": 5,
                 "relic_cap": DEFAULT_RELIC_CAP,
+                "obelisk_level": OBELISK_D5_THRESHOLD,
                 "targets": [1, 0, 0, 0, 0],
             },
         )
@@ -848,6 +1011,7 @@ class TestSolveStreaming:
                 "total_relic_chests": 0,
                 "divine_chests": 0,
                 "relic_cap": DEFAULT_RELIC_CAP,
+                "obelisk_level": OBELISK_D5_THRESHOLD,
                 "targets": [1, 0, 0, 0, 0],
             },
         )
@@ -859,6 +1023,7 @@ _SOLVE_PAYLOAD: dict[str, object] = {
     "total_relic_chests": 0,
     "divine_chests": 5,
     "relic_cap": DEFAULT_RELIC_CAP,
+    "obelisk_level": OBELISK_D5_THRESHOLD,
     "targets": [1, 0, 0, 0, 0],
 }
 

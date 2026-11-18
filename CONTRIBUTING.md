@@ -211,6 +211,10 @@ UNLOCK_D2_THRESHOLD = 3          # D2 unlocks at 3+ total divines
 UNLOCK_D3_THRESHOLD = 6          # D3 unlocks at 6+
 UNLOCK_D4_THRESHOLD = 10         # D4 unlocks at 10+
 UNLOCK_D5_THRESHOLD = 30         # D5 unlocks at 30+
+OBELISK_D2_THRESHOLD = 23        # D2 also needs Obelisk level 23+
+OBELISK_D3_THRESHOLD = 25        # D3 also needs 25+
+OBELISK_D4_THRESHOLD = 37        # D4 also needs 37+
+OBELISK_D5_THRESHOLD = 64        # D5 also needs 64+
 DEFAULT_RELIC_CAP = 5            # Shared cap for D2-D5 (range: 5-21)
 COST_PER_REROLL = 200            # Gems per reroll
 ```
@@ -219,6 +223,20 @@ When game mechanics change, update this file. The solver and tests import from
 `relic_solver.config` directly.
 
 ## Commit Conventions
+
+On Windows, point git at the editor wrapper once per clone:
+
+```powershell
+git config --local core.editor "<repo>/scripts/cz-editor.cmd"
+```
+
+`cz commit --edit` resolves the editor with `shutil.which()` and runs it as
+`[editor, file]`, so `core.editor` must be a single executable path with no
+arguments. A value such as `"...\code" --wait` fails with
+`RuntimeError: Editor '...' not found.`, and a bare `code` returns before the
+file is saved. The wrapper holds the `--wait` so the setting stays argument
+free. `notepad` works too, with no wrapper.
+
 
 This project uses [Commitizen](https://commitizen-tools.github.io/commitizen/)
 with conventional commits. All commit messages must follow the format:

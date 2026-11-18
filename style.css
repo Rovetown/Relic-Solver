@@ -282,6 +282,38 @@ h2.section-title {
 }
 
 
+.box select {
+  background: #1a1a2e;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #eee;
+  padding: 6px 10px;
+  touch-action: manipulation;
+  width: 120px;
+}
+
+
+.box select:focus {
+  border-color: #6a9fdb;
+  outline: none;
+}
+
+
+.box select:focus-visible {
+  border-color: #6a9fdb;
+  outline: 2px solid #6a9fdb;
+  outline-offset: 1px;
+}
+
+
+.lock-note {
+  color: #f0a868;
+  font-size: 0.85em;
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+
 .box input[type="number"]:focus {
   border-color: #6a9fdb;
   outline: none;
@@ -306,6 +338,12 @@ h2.section-title {
   height: 32px;
   image-rendering: pixelated;
   width: 32px;
+}
+
+
+.label-icon--tall {
+  height: 40px;
+  object-fit: contain;
 }
 
 button {
@@ -801,6 +839,21 @@ pre {
   display: block;
   font-size: 0.9em;
 }
+
+.whatsnew__thanks {
+  border-top: 1px solid #8a6f70;
+  color: #e5e7eb;
+  font-size: 0.9em;
+  margin: 1em 0 0;
+  padding-top: 0.75em;
+}
+
+
+.whatsnew__credit {
+  color: #f5d78e;
+  font-weight: 700;
+}
+
 
 .whatsnew__foot {
   display: flex;

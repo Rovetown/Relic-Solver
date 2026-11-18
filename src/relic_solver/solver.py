@@ -9,9 +9,14 @@ from scipy.stats import binom
 
 from relic_solver.config import (
     COST_PER_REROLL,
+    DEFAULT_OBELISK_LEVEL,
     DEFAULT_RELIC_CAP,
     DIVINE_CHANCE,
     NUM_RELIC_TYPES,
+    OBELISK_D2_THRESHOLD,
+    OBELISK_D3_THRESHOLD,
+    OBELISK_D4_THRESHOLD,
+    OBELISK_D5_THRESHOLD,
     UNLOCK_D2_THRESHOLD,
     UNLOCK_D3_THRESHOLD,
     UNLOCK_D4_THRESHOLD,
@@ -26,21 +31,43 @@ _UNLOCK_THRESHOLDS: tuple[int, ...] = (
     UNLOCK_D5_THRESHOLD,
 )
 
+_OBELISK_THRESHOLDS: tuple[int, ...] = (
+    0,
+    OBELISK_D2_THRESHOLD,
+    OBELISK_D3_THRESHOLD,
+    OBELISK_D4_THRESHOLD,
+    OBELISK_D5_THRESHOLD,
+)
+
 _PRUNE_LIMIT = 100_000
 
 _PRUNE_RATIO = 1e-15
 
 _NUM_CAPPED = NUM_RELIC_TYPES - 1
 
+_MAX_TIER = NUM_RELIC_TYPES - 1
+
+
+def obelisk_tier_cap(obelisk_level: int) -> int:
+    cap = 0
+    for idx in range(1, NUM_RELIC_TYPES):
+        if obelisk_level < _OBELISK_THRESHOLDS[idx]:
+            break
+        cap = idx
+    return cap
+
 
 def _get_drop_distribution(
     state: tuple[int, ...],
     total_divines: int,
     relic_cap: int,
+    obelisk_cap: int = _MAX_TIER,
 ) -> dict[int, float]:
     available: list[int] = []
 
     for idx in range(NUM_RELIC_TYPES):
+        if idx > obelisk_cap:
+            break
         if total_divines < _UNLOCK_THRESHOLDS[idx]:
             continue
         if idx == 0 or state[idx - 1] < relic_cap:
@@ -75,6 +102,7 @@ def _solve_dict(
     deadline: float | None,
     max_seconds: float | None,
     progress_callback: Callable[[int, int], None] | None,
+    obelisk_cap: int = _MAX_TIER,
 ) -> float:
     initial: tuple[int, ...] = (0,) * _NUM_CAPPED
     active: dict[tuple[int, ...], float] = {initial: 1.0}
@@ -110,6 +138,7 @@ def _solve_dict(
                     state,
                     total_divines=total,
                     relic_cap=relic_cap,
+                    obelisk_cap=obelisk_cap,
                 )
 
             for relic_idx, drop_prob in dist_cache[cache_key].items():
@@ -177,6 +206,7 @@ def _solve_numpy(
     deadline: float | None,
     max_seconds: float | None,
     progress_callback: Callable[[int, int], None] | None,
+    obelisk_cap: int = _MAX_TIER,
 ) -> float:
     dim = relic_cap + 1
     target_d1 = target[0]
@@ -236,6 +266,8 @@ def _solve_numpy(
         else:
             tier = 0
 
+        tier = min(tier, obelisk_cap)
+
         weighted = prob_arr * tier_weights[tier]
 
         new_prob = weighted.copy()
@@ -293,6 +325,7 @@ def solve(
     target_relics: tuple[int, ...],
     *,
     relic_cap: int = DEFAULT_RELIC_CAP,
+    obelisk_level: int = DEFAULT_OBELISK_LEVEL,
     progress_callback: Callable[[int, int], None] | None = None,
     max_seconds: float | None = None,
 ) -> float:
@@ -303,6 +336,8 @@ def solve(
         raise ValueError("total_relic_chests must be non-negative")
     if divine_chests < 0:
         raise ValueError("divine_chests must be non-negative")
+    if obelisk_level < 0:
+        raise ValueError("obelisk_level must be non-negative")
 
     target: tuple[int, ...] = (
         target_relics[0],
@@ -313,6 +348,11 @@ def solve(
 
     if _meets_target(initial, target, total_divines=0):
         return 1.0
+
+    obelisk_cap = obelisk_tier_cap(obelisk_level)
+
+    if any(target[idx] > 0 for idx in range(obelisk_cap + 1, NUM_RELIC_TYPES)):
+        return 0.0
 
     divine_chance = DIVINE_CHANCE
     if total_relic_chests > 0 and divine_chance > 0:
@@ -336,6 +376,7 @@ def solve(
     return _solve_numpy(
         target=target,
         relic_cap=relic_cap,
+        obelisk_cap=obelisk_cap,
         divine_chests=divine_chests,
         d_max=d_max,
         k_max=k_max,

@@ -8,10 +8,17 @@ pytestmark = pytest.mark.browser
 _RESULT_TIMEOUT_MS = 30_000
 
 
-def _fill_solver(page: Page, chests: str, divines: str, cap: str) -> None:
+def _fill_solver(
+    page: Page,
+    chests: str,
+    divines: str,
+    cap: str,
+    obelisk: str = "64",
+) -> None:
     page.fill("#totalRelicChests", chests)
     page.fill("#totalDivineChests", divines)
     page.fill("#relicCap", cap)
+    page.select_option("#obeliskLevel", obelisk)
 
 
 class TestSolveFlow:
@@ -103,6 +110,85 @@ class TestValidation:
         page.click("#runSolver")
 
         expect(page.locator("#errorMessage")).to_contain_text("needs a number")
+
+
+class TestObeliskGating:
+    def test_a_low_level_marks_the_gated_targets_locked(
+        self,
+        page: Page,
+        live_server: str,
+    ) -> None:
+        page.goto(live_server + "/")
+        page.select_option("#obeliskLevel", "0")
+
+        expect(page.locator("#lock-targetD2")).to_be_visible()
+        expect(page.locator("#lock-targetD2")).to_contain_text("23+")
+        expect(page.locator("#lock-targetD5")).to_be_visible()
+
+    def test_the_highest_level_clears_every_lock(
+        self,
+        page: Page,
+        live_server: str,
+    ) -> None:
+        page.goto(live_server + "/")
+        page.select_option("#obeliskLevel", "64")
+
+        for field in ("targetD2", "targetD3", "targetD4", "targetD5"):
+            expect(page.locator("#lock-" + field)).not_to_be_visible()
+
+    def test_a_mid_level_locks_only_the_higher_relics(
+        self,
+        page: Page,
+        live_server: str,
+    ) -> None:
+        page.goto(live_server + "/")
+        page.select_option("#obeliskLevel", "25")
+
+        expect(page.locator("#lock-targetD2")).not_to_be_visible()
+        expect(page.locator("#lock-targetD3")).not_to_be_visible()
+        expect(page.locator("#lock-targetD4")).to_be_visible()
+        expect(page.locator("#lock-targetD5")).to_be_visible()
+
+    def test_a_locked_target_is_refused_without_a_request(
+        self,
+        page: Page,
+        live_server: str,
+    ) -> None:
+        requests: list[str] = []
+        page.on("request", lambda r: requests.append(r.url))
+
+        page.goto(live_server + "/")
+        _fill_solver(page, "100", "5", "20", obelisk="0")
+        page.fill("#targetD2", "1")
+        page.click("#runSolver")
+
+        expect(page.locator("#errorBox")).to_be_visible()
+        expect(page.locator("#errorMessage")).to_contain_text("Obelisk level 23+")
+        assert not [url for url in requests if url.endswith("/solve")]
+
+    def test_the_level_reaches_the_url_and_survives_a_reload(
+        self,
+        page: Page,
+        live_server: str,
+    ) -> None:
+        page.goto(live_server + "/")
+        page.select_option("#obeliskLevel", "37")
+        expect(page).to_have_url(re.compile(r"ob=37"), timeout=5_000)
+
+        page.goto(live_server + "/")
+        expect(page.locator("#obeliskLevel")).to_have_value("37")
+
+    def test_a_shared_url_sets_the_level(self, page: Page, live_server: str) -> None:
+        page.goto(live_server + "/?ob=25")
+        expect(page.locator("#obeliskLevel")).to_have_value("25")
+
+    def test_an_unknown_level_in_the_url_is_ignored(
+        self,
+        page: Page,
+        live_server: str,
+    ) -> None:
+        page.goto(live_server + "/?ob=9999")
+        expect(page.locator("#obeliskLevel")).to_have_value("0")
 
 
 class TestInputPersistence:

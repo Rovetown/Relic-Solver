@@ -214,18 +214,18 @@ check-artifacts:
     if ($found.Count -gt 0) { Write-Host "Build artifacts found in tracked files:" -ForegroundColor Red; $found | ForEach-Object { Write-Host "  $_" }; exit 1 }
     Write-Host "No build artifacts in tracked files." -ForegroundColor Green
 
+# Keep the subject SHORT at its prompt. A prompt input is one line wide, so
+# long text typed or pasted into one picks up the terminal's wrap points as
+# real newlines, and commitizen then rejects the message: the subject must
+# stay a single line. Write long bodies with "just commit-edit" instead.
+
 # Conventional commit with commitizen
 commit:
-    uv run cz commit
+    uv run cz commit --no-retry
 
-# The cz prompts still run, so the subject line stays conventional and
-# cz bump can still read it; the editor pass is only for the long body.
-# At the "additional contextual information" prompt either press enter and
-# write the body in the editor, or type it there and separate lines with "|".
-
-# Conventional commit, then edit the message to write a long description
-commit-desc:
-    uv run cz commit --edit
+# Same prompts, then your editor opens on the message for a long body
+commit-edit:
+    uv run cz commit --no-retry --edit
 
 # Push to GitHub origin (current branch)
 push-origin:
@@ -234,7 +234,7 @@ push-origin:
 # Full deploy: stage all, commitizen commit, push to origin
 deploy:
     git add .
-    uv run cz commit
+    uv run cz commit --no-retry
     git push origin main
 
 # Bump version (auto from conventional commits), push commits + tag.

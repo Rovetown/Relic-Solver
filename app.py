@@ -45,10 +45,17 @@ from relic_solver._version import __version__
 from relic_solver.config import (
     COST_PER_REROLL,
     DEFAULT_RELIC_CAP,
+    MAX_OBELISK_LEVEL,
     MAX_RELIC_CAP,
     MAX_REQUEST_BYTES,
+    MIN_OBELISK_LEVEL,
     MIN_RELIC_CAP,
     NUM_RELIC_TYPES,
+    OBELISK_D2_THRESHOLD,
+    OBELISK_D3_THRESHOLD,
+    OBELISK_D4_THRESHOLD,
+    OBELISK_D5_THRESHOLD,
+    OBELISK_LEVEL_BANDS,
     RATE_LIMIT_DEFAULT,
     RATE_LIMIT_SOLVE,
     SOLVE_MAX_SECONDS,
@@ -403,6 +410,11 @@ def inject_config() -> dict[str, object]:
             "DEFAULT_RELIC_CAP": DEFAULT_RELIC_CAP,
             "NUM_RELIC_TYPES": NUM_RELIC_TYPES,
             "COST_PER_REROLL": COST_PER_REROLL,
+            "OBELISK_LEVEL_BANDS": OBELISK_LEVEL_BANDS,
+            "OBELISK_D2_THRESHOLD": OBELISK_D2_THRESHOLD,
+            "OBELISK_D3_THRESHOLD": OBELISK_D3_THRESHOLD,
+            "OBELISK_D4_THRESHOLD": OBELISK_D4_THRESHOLD,
+            "OBELISK_D5_THRESHOLD": OBELISK_D5_THRESHOLD,
         },
     }
 
@@ -601,10 +613,11 @@ def _cache_key(
     chests: int,
     divines: int,
     cap: int,
+    obelisk: int,
     targets: tuple[int, ...],
 ) -> str:
     target_csv = ",".join(str(t) for t in targets)
-    return f"solve:{chests}:{divines}:{cap}:{target_csv}"
+    return f"solve:{chests}:{divines}:{cap}:{obelisk}:{target_csv}"
 
 
 def _ndjson_line(obj: dict[str, object]) -> str:
@@ -628,7 +641,13 @@ def _validate_solve_input(data: object) -> dict[str, object] | tuple[Response, i
     if not isinstance(data, dict):
         return jsonify(error="Request body must be a JSON object"), 400
 
-    required = ("total_relic_chests", "divine_chests", "relic_cap", "targets")
+    required = (
+        "total_relic_chests",
+        "divine_chests",
+        "relic_cap",
+        "obelisk_level",
+        "targets",
+    )
     missing = [f for f in required if f not in data]
     if missing:
         return jsonify(error=f"Missing fields: {', '.join(missing)}"), 400
@@ -638,6 +657,7 @@ def _validate_solve_input(data: object) -> dict[str, object] | tuple[Response, i
     raw_chests = data["total_relic_chests"]
     raw_divines = data["divine_chests"]
     raw_cap = data["relic_cap"]
+    raw_obelisk = data["obelisk_level"]
     raw_targets = data["targets"]
 
     if not isinstance(raw_chests, int | float) or raw_chests != int(raw_chests):
@@ -654,6 +674,14 @@ def _validate_solve_input(data: object) -> dict[str, object] | tuple[Response, i
         errors.append("relic_cap must be an integer")
     elif not (MIN_RELIC_CAP <= int(raw_cap) <= MAX_RELIC_CAP):
         errors.append(f"relic_cap must be between {MIN_RELIC_CAP} and {MAX_RELIC_CAP}")
+
+    if not isinstance(raw_obelisk, int | float) or raw_obelisk != int(raw_obelisk):
+        errors.append("obelisk_level must be an integer")
+    elif not (MIN_OBELISK_LEVEL <= int(raw_obelisk) <= MAX_OBELISK_LEVEL):
+        errors.append(
+            f"obelisk_level must be between {MIN_OBELISK_LEVEL}"
+            f" and {MAX_OBELISK_LEVEL}",
+        )
 
     if not isinstance(raw_targets, list):
         errors.append("targets must be an array")
@@ -677,6 +705,7 @@ def _validate_solve_input(data: object) -> dict[str, object] | tuple[Response, i
         "total_relic_chests": int(raw_chests),
         "divine_chests": int(raw_divines),
         "relic_cap": int(raw_cap),
+        "obelisk_level": int(raw_obelisk),
         "targets": tuple(int(t) for t in raw_targets),
     }
 
@@ -694,6 +723,7 @@ def run_solver() -> Response | tuple[Response, int]:
     total_relic_chests: int = validated["total_relic_chests"]  # type: ignore[assignment]
     divine_chests: int = validated["divine_chests"]  # type: ignore[assignment]
     relic_cap: int = validated["relic_cap"]  # type: ignore[assignment]
+    obelisk_level: int = validated["obelisk_level"]  # type: ignore[assignment]
     targets: tuple[int, ...] = validated["targets"]  # type: ignore[assignment]
 
     log_context = {"request_id": g.get("request_id", "-")}
@@ -702,7 +732,13 @@ def run_solver() -> Response | tuple[Response, int]:
     _ensure_redis()
 
     normalized = (targets[0], *(min(t, relic_cap) for t in targets[1:]))
-    key = _cache_key(total_relic_chests, divine_chests, relic_cap, normalized)
+    key = _cache_key(
+        total_relic_chests,
+        divine_chests,
+        relic_cap,
+        obelisk_level,
+        normalized,
+    )
 
     if redis_client is not None:
         try:
@@ -749,6 +785,7 @@ def run_solver() -> Response | tuple[Response, int]:
                 divine_chests,
                 targets,
                 relic_cap=relic_cap,
+                obelisk_level=obelisk_level,
                 max_seconds=SOLVE_MAX_SECONDS,
                 progress_callback=_progress,
             )
@@ -805,6 +842,7 @@ def run_solver() -> Response | tuple[Response, int]:
                             "chests": total_relic_chests,
                             "divines": divine_chests,
                             "cap": relic_cap,
+                            "ob": obelisk_level,
                             "targets": list(targets),
                             "prob": round(prob, 8),
                             "ms": round(duration_ms, 1),
