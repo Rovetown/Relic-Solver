@@ -1,3 +1,13 @@
+## v6.0.0 (2026-11-18)
+
+### BREAKING CHANGE
+
+- /solve now requires obelisk_level in the request body.
+
+### Feat
+
+- added obelisk level to unlock conditions for relics, changed the what's new dialog
+
 ## v5.0.0 (2026-11-11)
 
 ## v4.1.0 (2026-10-25)

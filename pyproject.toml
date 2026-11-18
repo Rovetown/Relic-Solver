@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "relic-solver"
-version = "5.0.0"
+version = "6.0.0"
 description = "A Flask web app that calculates the exact probability of hitting divine relic targets on a single reroll in Idle Obelisk Miner. Uses an incremental forward Markov chain with absorbing states, weighted by the binomial distribution. Handles the full game mechanic: dynamic relic unlocks, shared caps, and uncapped D1. Results stream in real-time via NDJSON with Redis caching for instant repeat lookups."
 readme = "README.md"
 license = "MIT"
