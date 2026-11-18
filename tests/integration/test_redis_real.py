@@ -165,7 +165,16 @@ class TestUsageList:
     ) -> None:
         client.post("/solve", json=SOLVE_PAYLOAD).get_data()
         row = json.loads(real_redis.lindex("analytics:solves", 0) or "{}")
-        assert set(row) == {"ts", "chests", "divines", "cap", "targets", "prob", "ms"}
+        assert set(row) == {
+            "ts",
+            "chests",
+            "divines",
+            "cap",
+            "ob",
+            "targets",
+            "prob",
+            "ms",
+        }
 
 
 class TestLimiterStorage:
